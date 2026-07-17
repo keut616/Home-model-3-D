@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ແບບຈຳລອງ 3 ມິຕິ ເຮືອນໂມເດີນ 3 ຫ້ອງ (ຫຼັງຄາຕ່າງລະດັບ)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: 'Inter', sans-serif; }
+        #canvas-container { width: 100vw; height: 100vh; display: block; }
+        #ui-container {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9); padding: 15px 25px;
+            border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center; pointer-events: none;
+        }
+        .instruction { font-size: 14px; color: #333; margin: 0; }
+        .title-text { font-size: 18px; font-weight: bold; color: #1a202c; margin-bottom: 5px; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <div id="ui-container">
+        <div class="title-text">ເຮືອນໂມເດີນຫຼັງຄາຕ່າງລະດັບ</div>
+        <p class="instruction">ໃຊ້ເມົ້າຄລິກຊ້າຍແລ້ວລາກເພື່ອໝຸນເບິ່ງ 360 ອົງສາ</p>
+        <p class="instruction" style="color:#16a34a; font-weight:bold; margin-top:5px;">✅ ແກ້ໄຂ Error (Illegal return) ສຳເລັດແລ້ວ!</p>
+    </div>
+
+    <script>
+        (function() {
+            const scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x87CEEB, 0.015);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(-18, 8, -8); 
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxPolarAngle = Math.PI / 2 - 0.05;
+        controls.target.set(0, 2, 0);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+        dirLight.position.set(-10, 20, 10);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 50;
+        dirLight.shadow.camera.left = -20;
+        dirLight.shadow.camera.right = 20;
+        dirLight.shadow.camera.top = 20;
+        dirLight.shadow.camera.bottom = -20;
+        scene.add(dirLight);
+
+        const groundGeometry = new THREE.PlaneGeometry(150, 150);
+        const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x556B2F, roughness: 0.8 });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        const wallMaterial = new THREE.MeshStandardMaterial({ color: 0xe0e0e0, roughness: 0.9 });
+        const pillarMaterial = new THREE.MeshStandardMaterial({ color: 0x9e9e9e, roughness: 0.8 });
+        const roofMaterial = new THREE.MeshStandardMaterial({ color: 0x37474f, roughness: 0.6 });
+        const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x8d6e63, roughness: 0.6 });
+        const glassMaterial = new THREE.MeshPhysicalMaterial({ color: 0xaaccff, transmission: 0.9, opacity: 1, transparent: true, metalness: 0.5, roughness: 0.1, ior: 1.5, thickness: 0.05 });
+        const frameMaterial = new THREE.MeshStandardMaterial({ color: 0x222222 });
+        const doorMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+        const dividerRedMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, opacity: 0.7, transparent: true });
+        const dividerBlueMaterial = new THREE.MeshStandardMaterial({ color: 0x0066cc, opacity: 0.7, transparent: true });
+        const dividerLightBlueMaterial = new THREE.MeshStandardMaterial({ color: 0x99ccff, opacity: 0.7, transparent: true });
+        const woodWallMaterial = new THREE.MeshStandardMaterial({ color: 0xA0522D, roughness: 0.8 });
+        const gableMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.9 }); 
+
+        const houseGroup = new THREE.Group();
+        scene.add(houseGroup);
+
+        const wallHeight = 3.0; 
+        const shortWallHeight = 2.4; 
+        const wallThickness = 0.2;
+        const pillarSize = 0.4;
+        const topOfWallHeight = wallHeight; 
+        const topOfShortWallHeight = shortWallHeight;
+
+        const baseGeometry = new THREE.BoxGeometry(8 + pillarSize, 0.2, 6 + pillarSize);
+        const base = new THREE.Mesh(baseGeometry, floorMaterial);
+        base.position.set(0, 0.1, 0); 
+        houseGroup.add(base);
+
+        function createWallWithHole(width, height, thickness, holeX, holeWidth, holeY, holeHeight, material) {
+            const group = new THREE.Group();
+            if (holeY > 0) {
+                const bottomGeo = new THREE.BoxGeometry(width, holeY, thickness);
+                bottomGeo.translate(0, holeY / 2, 0); 
+                const bottomMesh = new THREE.Mesh(bottomGeo, material);
+                bottomMesh.castShadow = true; bottomMesh.receiveShadow = true;
+                group.add(bottomMesh);
+            }
+            const topHeight = height - (holeY + holeHeight);
+            if (topHeight > 0.001) {
+                const topGeo = new THREE.BoxGeometry(width, topHeight, thickness);
+                topGeo.translate(0, topHeight / 2, 0);
+                const topMesh = new THREE.Mesh(topGeo, material);
+                topMesh.position.y = holeY + holeHeight; 
+                topMesh.castShadow = true; topMesh.receiveShadow = true;
+                group.add(topMesh);
+            }
+            const leftWidth = (width - holeWidth) / 2 + holeX;
+            if (leftWidth > 0.001) {
+                const leftGeo = new THREE.BoxGeometry(leftWidth, holeHeight, thickness);
+                leftGeo.translate(0, holeHeight / 2, 0);
+                const leftMesh = new THREE.Mesh(leftGeo, material);
+                leftMesh.position.set(-width/2 + leftWidth/2, holeY, 0);
+                leftMesh.castShadow = true; leftMesh.receiveShadow = true;
+                group.add(leftMesh);
+            }
+            const rightWidth = width - leftWidth - holeWidth;
+            if (rightWidth > 0.001) {
+                const rightGeo = new THREE.BoxGeometry(rightWidth, holeHeight, thickness);
+                rightGeo.translate(0, holeHeight / 2, 0);
+                const rightMesh = new THREE.Mesh(rightGeo, material);
+                rightMesh.position.set(width/2 - rightWidth/2, holeY, 0);
+                rightMesh.castShadow = true; rightMesh.receiveShadow = true;
+                group.add(rightMesh);
+            }
+            return group;
+        }
+
+        function createSolidWall(width, height, thickness, material) {
+            const geometry = new THREE.BoxGeometry(width, height, thickness);
+            geometry.translate(0, height / 2, 0); 
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.castShadow = true; mesh.receiveShadow = true;
+            return mesh;
+        }
+
+        function createSlidingWindow(width, height) {
+            const group = new THREE.Group();
+            const frameThick = 0.04; 
+            const innerFrameThick = 0.03; 
+            const depth = wallThickness - 0.05; 
+            
+            const frameGeoV = new THREE.BoxGeometry(frameThick, height, depth);
+            const frameGeoH = new THREE.BoxGeometry(width, frameThick, depth);
+            const leftFrame = new THREE.Mesh(frameGeoV, frameMaterial); leftFrame.position.x = -width/2 + frameThick/2; group.add(leftFrame);
+            const rightFrame = new THREE.Mesh(frameGeoV, frameMaterial); rightFrame.position.x = width/2 - frameThick/2; group.add(rightFrame);
+            const topFrame = new THREE.Mesh(frameGeoH, frameMaterial); topFrame.position.y = height/2 - frameThick/2; group.add(topFrame);
+            const bottomFrame = new THREE.Mesh(frameGeoH, frameMaterial); bottomFrame.position.y = -height/2 + frameThick/2; group.add(bottomFrame);
+
+            const overlap = 0.05; 
+            const panelWidth = (width - frameThick*2) / 2 + overlap;
+            const panelHeight = height - frameThick*2;
+            
+            function createPanel() {
+                const panelGroup = new THREE.Group();
+                const innerGeoV = new THREE.BoxGeometry(innerFrameThick, panelHeight, innerFrameThick);
+                const innerGeoH = new THREE.BoxGeometry(panelWidth, innerFrameThick, innerFrameThick);
+                const pLeft = new THREE.Mesh(innerGeoV, frameMaterial); pLeft.position.x = -panelWidth/2 + innerFrameThick/2; panelGroup.add(pLeft);
+                const pRight = new THREE.Mesh(innerGeoV, frameMaterial); pRight.position.x = panelWidth/2 - innerFrameThick/2; panelGroup.add(pRight);
+                const pTop = new THREE.Mesh(innerGeoH, frameMaterial); pTop.position.y = panelHeight/2 - innerFrameThick/2; panelGroup.add(pTop);
+                const pBottom = new THREE.Mesh(innerGeoH, frameMaterial); pBottom.position.y = -panelHeight/2 + innerFrameThick/2; panelGroup.add(pBottom);
+
+                const glassGeo = new THREE.BoxGeometry(panelWidth - innerFrameThick*2, panelHeight - innerFrameThick*2, 0.01);
+                const glass = new THREE.Mesh(glassGeo, glassMaterial);
+                panelGroup.add(glass);
+                return panelGroup;
+            }
+
+            const panel1 = createPanel(); panel1.position.set(-width/4 + overlap/2, 0, 0.02); group.add(panel1);
+            const panel2 = createPanel(); panel2.position.set(width/4 - overlap/2, 0, -0.02); group.add(panel2);
+            return group;
+        }
+
+        function createDoor(width, height) {
+            const group = new THREE.Group();
+            const door = new THREE.Mesh(new THREE.BoxGeometry(width, height, 0.05), doorMaterial);
+            door.position.set(width/2, height/2, 0); 
+            const pivot = new THREE.Group();
+            pivot.add(door); pivot.rotation.y = -Math.PI / 4; pivot.position.set(-width/2, 0, 0);
+            group.add(pivot);
+            return group;
+        }
+
+        const pillarPositions = [
+            [4, 0, 3], [4, 0, 0], [4, 0, -3], 
+            [0, 0, 3], [0, 0, 0], [0, 0, -3], 
+            [-4, 0, -3], [-4, 0, 0], 
+            [-4, 0, 3]  
+        ];
+        
+        pillarPositions.forEach((pos, index) => {
+            let pMesh;
+            let isShortPillar = (index >= 6); 
+            let currentHeight = isShortPillar ? shortWallHeight : wallHeight;
+
+            if (isShortPillar) {
+                const pRoundGeoShort = new THREE.CylinderGeometry(pillarSize/1.5, pillarSize/1.5, currentHeight, 16);
+                pRoundGeoShort.translate(0, currentHeight/2, 0); 
+                pMesh = new THREE.Mesh(pRoundGeoShort, pillarMaterial);
+            } else {
+                const pGeoTall = new THREE.BoxGeometry(pillarSize, currentHeight, pillarSize);
+                pGeoTall.translate(0, currentHeight/2, 0);
+                pMesh = new THREE.Mesh(pGeoTall, pillarMaterial);
+            }
+            pMesh.position.set(pos[0], 0, pos[2]);
+            pMesh.castShadow = true; pMesh.receiveShadow = true;
+            houseGroup.add(pMesh);
+        });
+
+        const winWidth = 1.5, winHeight = 1.2, winY = 0.9;
+        const doorWidth = 0.9, doorHeight = 2.1;
+
+        // --- ຫ້ອງ 1 (ໜ້າ-ຂວາ) ---
+        
+        // ❌ ຝາໜ້າສຸດ (ເບື້ອງຂວາ, Z=3) ບ່ອນໝາຍ X ສີແດງ -> ປັບເປັນຝາຕັນລ້ວນໆ
+        const wall1_bottom = createSolidWall(4 - pillarSize, wallHeight, wallThickness, wallMaterial);
+        wall1_bottom.position.set(2, 0, 3); 
+        houseGroup.add(wall1_bottom);
+
+        const wall1_right = createSolidWall(wallThickness, wallHeight, 3 - pillarSize, wallMaterial);
+        wall1_right.position.set(4, 0, 1.5); 
+        houseGroup.add(wall1_right);
+
+        const wall1_top = createWallWithHole(4 - pillarSize, wallHeight, wallThickness, -1, doorWidth, 0, doorHeight, wallMaterial);
+        wall1_top.position.set(2, 0, 0); 
+        houseGroup.add(wall1_top);
+        
+        const door1 = createDoor(doorWidth, doorHeight);
+        door1.position.set(2 - 1, 0, 0); door1.rotation.y = Math.PI; 
+        houseGroup.add(door1);
+
+        const wall1_left_length = 3 - pillarSize;
+        const wall1_left = createWallWithHole(wall1_left_length, wallHeight, wallThickness, 0, winWidth, winY, winHeight, wallMaterial);
+        wall1_left.position.set(0, 0, 1.5); wall1_left.rotation.y = Math.PI / 2; 
+        houseGroup.add(wall1_left);
+
+        const win1 = createSlidingWindow(winWidth, winHeight);
+        win1.position.set(0, winY + winHeight/2, 1.5); win1.rotation.y = Math.PI / 2; 
+        houseGroup.add(win1);
+
+        // --- ຫ້ອງ 2 (ຫຼັງ-ຂວາ) ---
+        const wall2_top = createWallWithHole(4 - pillarSize, wallHeight, wallThickness, 0, winWidth, winY, winHeight, wallMaterial);
+        wall2_top.position.set(2, 0, -3); houseGroup.add(wall2_top);
+        
+        const win2 = createSlidingWindow(winWidth, winHeight);
+        win2.position.set(2, winY + winHeight/2, -3); houseGroup.add(win2);
+
+        const wall2_right = createSolidWall(wallThickness, wallHeight, 3 - pillarSize, wallMaterial);
+        wall2_right.position.set(4, 0, -1.5); houseGroup.add(wall2_right);
+
+        const dividerWidth = (3 - pillarSize) * 0.6; 
+        const divHeight = wallHeight; 
+        const divBlue = new THREE.Mesh(new THREE.BoxGeometry(wallThickness, divHeight, dividerWidth/3), dividerBlueMaterial);
+        divBlue.position.set(0, divHeight/2, -3 + pillarSize/2 + dividerWidth/6); houseGroup.add(divBlue);
+        const divRed = new THREE.Mesh(new THREE.BoxGeometry(wallThickness, divHeight, dividerWidth/3), dividerRedMaterial);
+        divRed.position.set(0, divHeight/2, -3 + pillarSize/2 + dividerWidth/6 + dividerWidth/3); houseGroup.add(divRed);
+        const divLightBlue = new THREE.Mesh(new THREE.BoxGeometry(wallThickness, divHeight, dividerWidth/3), dividerLightBlueMaterial);
+        divLightBlue.position.set(0, divHeight/2, -3 + pillarSize/2 + dividerWidth/6 + dividerWidth/3 * 2); houseGroup.add(divLightBlue);
+
+        // --- ຫ້ອງ 3 (ຫຼັງ-ຊ້າຍ) ---
+        const wall3_top = createWallWithHole(4 - pillarSize, shortWallHeight, wallThickness, -0.5, winWidth, winY, winHeight, wallMaterial);
+        wall3_top.position.set(-2, 0, -3); houseGroup.add(wall3_top);
+        
+        const win3_top = createSlidingWindow(winWidth, winHeight);
+        win3_top.position.set(-2 - 0.5, winY + winHeight/2, -3); houseGroup.add(win3_top);
+
+        // ✅ ປ່ຽນຝາດ້ານຊ້າຍ (X=-4) ຈາກຝາຕັນ ເປັນຝາທີ່ມີປະຕູເລື່ອນແກ້ວ
+        const wall3_left_full_length = 3 - pillarSize; 
+        const sideSlideDoorWidth = 1.8; // ຄວາມກວ້າງປະຕູເລື່ອນ
+        
+        const wall3_left_mod = createWallWithHole(wall3_left_full_length, shortWallHeight, wallThickness, 0, sideSlideDoorWidth, 0, doorHeight, wallMaterial);
+        wall3_left_mod.position.set(-4, 0, -1.5); 
+        wall3_left_mod.rotation.y = Math.PI / 2; houseGroup.add(wall3_left_mod);
+
+        // ສ້າງປະຕູແກ້ວບານເລື່ອນມາໃສ່ດ້ານຊ້າຍ
+        const sideSlideGlassDoor = createSlidingWindow(sideSlideDoorWidth, doorHeight);
+        sideSlideGlassDoor.position.set(-4, doorHeight/2, -1.5); 
+        sideSlideGlassDoor.rotation.y = Math.PI / 2; // ໝຸນໃຫ້ເຂົ້າກັບຝາ
+        houseGroup.add(sideSlideGlassDoor);
+
+        // ✅ ປ່ຽນຝາດ້ານໜ້າ (ເບື້ອງຊ້າຍ, Z=0) ຈາກປະຕູແກ້ວເລື່ອນເປັນຝາຕັນຕາມທີ່ຮ້ອງຂໍ
+        const wall3_bottom = createSolidWall(4 - pillarSize, shortWallHeight, wallThickness, wallMaterial);
+        wall3_bottom.position.set(-2, 0, 0); 
+        houseGroup.add(wall3_bottom);
+
+        // --- ຫຼັງຄາຊົງໂມເດີນ (ແບບຕ່າງລະດັບ) ---
+        const roofGroup = new THREE.Group();
+        scene.add(roofGroup);
+        
+        const roofThickness = 0.2;
+        const roofOverhang = 0.8;
+        const roofTilt = 0.15;
+        const upperRoofHeightOffset = 0.5;
+
+        // ✅ ຟັງຊັນທີ່ເຄີຍຂາດຫາຍໄປຈົນເຮັດໃຫ້ເກີດ Error ໄດ້ຖືກເພີ່ມກັບຄືນມາແລ້ວ
+        function createGable(width, heightLeft, heightRight, depth, material) {
+            const shape = new THREE.Shape();
+            shape.moveTo(-width/2, 0); 
+            shape.lineTo(width/2, 0); 
+            shape.lineTo(width/2, heightRight); 
+            shape.lineTo(-width/2, heightLeft); 
+            shape.lineTo(-width/2, 0);
+            const extrudeSettings = { depth: depth, bevelEnabled: false, curveSegments: 1 };
+            const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+            geo.center(); 
+            return new THREE.Mesh(geo, material);
+        }
+
+        const upperRoofWidth = 4 + pillarSize + roofOverhang*2;
+        const upperRoofGeo = new THREE.BoxGeometry(upperRoofWidth, roofThickness, 6 + pillarSize + roofOverhang*2);
+        const upperRoof = new THREE.Mesh(upperRoofGeo, roofMaterial);
+        const upperRoofCenterY = topOfWallHeight + upperRoofHeightOffset; 
+        upperRoof.position.set(2, upperRoofCenterY, 0);
+        upperRoof.rotation.z = -roofTilt; upperRoof.castShadow = true; roofGroup.add(upperRoof);
+
+        const lowerRoofWidth = 4 + pillarSize + roofOverhang; 
+        const lowerRoofGeo = new THREE.BoxGeometry(lowerRoofWidth, roofThickness, 6 + pillarSize + roofOverhang*2 + 0.5);
+        const lowerRoof = new THREE.Mesh(lowerRoofGeo, roofMaterial);
+        const lowerRoofCenterX = -2.4; 
+        
+        const lowerRoofLeftPillarX = -4.0;
+        const distFromCenterToPillar = lowerRoofLeftPillarX - lowerRoofCenterX; 
+        const lowerY_at_center = topOfShortWallHeight - (distFromCenterToPillar * Math.sin(roofTilt));
+        
+        lowerRoof.position.set(lowerRoofCenterX, lowerY_at_center, 0); 
+        lowerRoof.rotation.z = roofTilt; lowerRoof.castShadow = true; roofGroup.add(lowerRoof);
+
+        const upperRoofLeftY = upperRoofCenterY + (2 * Math.sin(roofTilt)); 
+        const lowerRoofRightY = lowerY_at_center + ((0 - lowerRoofCenterX) * Math.sin(roofTilt)); 
+        const betweenWallHeight = upperRoofLeftY - lowerRoofRightY + 0.2; 
+        
+        const betweenWall = new THREE.Mesh(new THREE.BoxGeometry(wallThickness, betweenWallHeight, 6 + pillarSize + roofOverhang), woodWallMaterial);
+        betweenWall.position.set(0, lowerRoofRightY + betweenWallHeight/2 - 0.1, -0.2); 
+        betweenWall.castShadow = true; roofGroup.add(betweenWall);
+
+        const ventGeo = new THREE.BoxGeometry(wallThickness + 0.1, 0.5, 0.5*1.5);
+        for (let i = -1; i <= 1; i++) {
+            const vent = new THREE.Mesh(ventGeo, woodWallMaterial); 
+            vent.position.set(0, betweenWall.position.y + 0.1, (i * 1.8) - 0.2);
+            roofGroup.add(vent);
+        }
+
+        const hL_upper = upperRoofLeftY - topOfWallHeight;
+        const hR_upper = (upperRoofCenterY - (2 * Math.sin(roofTilt))) - topOfWallHeight;
+        
+        const gable1 = createGable(4, hL_upper, hR_upper, wallThickness, gableMaterial);
+        gable1.position.set(2, topOfWallHeight + Math.max(hL_upper, hR_upper)/2, 3); roofGroup.add(gable1);
+
+        const gable2 = createGable(4, hL_upper, hR_upper, wallThickness, gableMaterial);
+        gable2.position.set(2, topOfWallHeight + Math.max(hL_upper, hR_upper)/2, -3); roofGroup.add(gable2);
+
+        const rightFiller = new THREE.Mesh(new THREE.BoxGeometry(wallThickness, hR_upper, 6 + pillarSize), gableMaterial);
+        rightFiller.position.set(4, topOfWallHeight + hR_upper/2, 0); roofGroup.add(rightFiller);
+
+        const gable3HeightR = lowerRoofRightY - topOfShortWallHeight;
+        
+        const gable3 = createGable(4, 0, gable3HeightR, wallThickness, gableMaterial);
+        gable3.position.set(-2, topOfShortWallHeight + gable3HeightR/2, -3); roofGroup.add(gable3);
+
+        const gable4 = createGable(4, 0, gable3HeightR, wallThickness, wallMaterial); 
+        gable4.position.set(-2, topOfShortWallHeight + gable3HeightR/2, 3); roofGroup.add(gable4);
+
+        function createRoomLabel(text, x, z) {
+            const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            ctx.beginPath(); ctx.arc(128, 128, 100, 0, 2 * Math.PI); ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 5; ctx.stroke();
+            ctx.font = 'bold 120px Arial'; ctx.fillStyle = 'red'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, 128, 128);
+            const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), transparent: true }));
+            mesh.rotation.x = -Math.PI / 2; mesh.position.set(x, 0.05, z); return mesh;
+        }
+
+        houseGroup.add(createRoomLabel('1', 2, 1.5));
+        houseGroup.add(createRoomLabel('2', 2, -1.5));
+        houseGroup.add(createRoomLabel('3', -2, -1.5));
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }, false);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update(); 
+            const angle = controls.getPolarAngle();
+            roofGroup.visible = (angle >= 0.8);
+            renderer.render(scene, camera);
+        }
+
+        window.onload = animate;
+        
+        })();
+    </script>
+</body>
+</html>
