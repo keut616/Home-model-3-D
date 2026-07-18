@@ -446,7 +446,7 @@
             let targetGateSlide = 0;
             let currentGateSlide = 0;
             
-            // ຟັງຊັນສຳລັບເປີດ/ປິດ ປະຕູຮົ້ວ (ໃຊ້ຮ່ວມກັນທັງປຸ່ມກົດ ແລະ ອະນິເມຊັນອັດຕະໂນມັດ)
+            // ຟັງຊັນສຳລັບເປີດ/ປິດ ປະຕູຮົ້ວ
             window.setGateState = function(open) {
                 if (isGateOpen !== open) {
                     isGateOpen = open;
@@ -524,6 +524,20 @@
 
                     const pillarG2 = new THREE.Mesh(pGeo, fencePillarMat);
                     pillarG2.position.copy(gatePos2); pillarG2.castShadow = true; fenceGroup.add(pillarG2);
+
+                    const numSub1 = Math.floor(dist1 / 3.5);
+                    for(let j=1; j<numSub1; j++) {
+                        const subP = new THREE.Mesh(pGeo, fencePillarMat);
+                        subP.position.copy(new THREE.Vector3().lerpVectors(p1, gatePos1, j/numSub1));
+                        subP.castShadow = true; fenceGroup.add(subP);
+                    }
+
+                    const numSub2 = Math.floor(dist2 / 3.5);
+                    for(let j=1; j<numSub2; j++) {
+                        const subP = new THREE.Mesh(pGeo, fencePillarMat);
+                        subP.position.copy(new THREE.Vector3().lerpVectors(gatePos2, p2, j/numSub2));
+                        subP.castShadow = true; fenceGroup.add(subP);
+                    }
 
                     const gateGroup = new THREE.Group();
                     const ironMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.5, metalness: 0.9 });
@@ -724,11 +738,11 @@
 
             // 0. ສ້າງລົດເກັງສີຂາວ (ສຳລັບປ້າວັນຂັບ)
             const carGroup = new THREE.Group();
-            const carBodyMat = new THREE.MeshStandardMaterial({color: 0xffffff, roughness: 0.2, metalness: 0.5}); // ລົດສີຂາວ
+            const carBodyMat = new THREE.MeshStandardMaterial({color: 0xffffff, roughness: 0.2, metalness: 0.5}); 
             const carBody = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.7, 5), carBodyMat);
             carBody.position.y = 0.6; carBody.castShadow = true; carGroup.add(carBody);
 
-            const cabinMat = new THREE.MeshStandardMaterial({color: 0x222222}); // ກະຈົກລົດສີດຳ
+            const cabinMat = new THREE.MeshStandardMaterial({color: 0x222222}); 
             const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.6, 2.5), cabinMat);
             cabin.position.set(0, 1.25, -0.5); cabin.castShadow = true; carGroup.add(cabin);
 
@@ -741,8 +755,8 @@
             
             // ຕົວລະຄອນໃໝ່ ປ້າວັນ (ນັ່ງໃນລົດ)
             const van = createPerson("ປ້າວັນ", 0xff69b4, 0x111111, 0.85, true, "van.jpg");
-            van.group.position.set(0, 0.7, -0.3); // ນັ່ງໃນຫ້ອງໂດຍສານລົດ
-            van.leftLeg.visible = false; // ເຊື່ອງຂາເພາະນັ່ງໃນລົດ
+            van.group.position.set(0, 0.7, -0.3); 
+            van.leftLeg.visible = false; 
             van.rightLeg.visible = false;
             carGroup.add(van.group);
             scene.add(carGroup);
@@ -815,18 +829,15 @@
             tArm.position.set(0.2, 0.3, 0); tArm.rotation.z = -Math.PI/4; toyGroup.add(tArm);
             toyGroup.position.set(-9.5, 0, 10); scene.add(toyGroup);
             
-            // ອະນິເມຊັນຫຼັກ (ເລື່ອງລາວຂອງອາເຕ້ ແລະ ປ້າວັນ ໃນລູບ 20 ວິນາທີ)
             arte.update = (time) => {
                 const cycle = 20;
                 const t = time % cycle;
 
                 if (t < 5) {
-                    // 1. ປ້າວັນຂັບລົດມາຈອດໜ້າປະຕູຮົ້ວດ້ານຫຼັງ (-12.5 ແກນ X)
-                    carGroup.position.z = -35 + (t / 5) * 27.5; // ແລ່ນຈາກ -35 ມາຈອດທີ່ -7.5 (ໜ້າປະຕູ)
+                    carGroup.position.z = -35 + (t / 5) * 27.5; 
                     carGroup.position.x = -12.5;
-                    window.setGateState(false); // ປະຕູປິດ
+                    window.setGateState(false); 
                     
-                    // ອາເຕ້ນັ່ງຫຼິ້ນລົດຈົກຢູ່ເດີ່ນ (ຕຳແໜ່ງ -10, 10)
                     arte.group.position.set(-10, -0.4 * 0.6, 10);
                     arte.group.rotation.y = 0;
                     arte.leftLeg.rotation.x = -Math.PI / 2;
@@ -838,57 +849,50 @@
                     tArm.rotation.z = -Math.PI/4 + Math.sin(time * 4) * 0.2;
                 } 
                 else if (t < 6) {
-                    // 2. ລົດຈອດແລ້ວ. ອາເຕ້ລຸກຢືນຂຶ້ນ ແລະ ຫັນໜ້າໄປທາງປະຕູຮົ້ວ
                     carGroup.position.z = -7.5;
-                    toyGroup.rotation.y = 0; tArm.rotation.z = -Math.PI/4; // ວາງລົດຈົກລົງ
+                    toyGroup.rotation.y = 0; tArm.rotation.z = -Math.PI/4; 
                     
                     let p = t - 5;
-                    arte.group.position.y = (-0.4 * 0.6) + p * (0.4 * 0.6); // ຢືນຂຶ້ນ
+                    arte.group.position.y = (-0.4 * 0.6) + p * (0.4 * 0.6); 
                     arte.leftLeg.rotation.x = -Math.PI / 2 * (1 - p);
                     arte.rightLeg.rotation.x = -Math.PI / 2 * (1 - p);
                     arte.leftArm.rotation.x = 0; arte.rightArm.rotation.x = 0;
-                    arte.group.rotation.y = Math.PI * p; // ຫັນຫຼັງກັບໄປຫາປະຕູ
+                    arte.group.rotation.y = Math.PI * p; 
                 } 
                 else if (t < 9) {
-                    // 3. ອາເຕ້ແລ່ນໄປທີ່ປະຕູຮົ້ວ (ແລ່ນຈາກ x:-10, z:10 ໄປຫາ x:-11.5, z:-3.5)
                     carGroup.position.z = -7.5;
                     let p = (t - 6) / 3;
                     arte.group.position.x = -10 - p * 1.5; 
                     arte.group.position.z = 10 - p * 13.5; 
-                    arte.group.rotation.y = Math.PI - Math.atan2(1.5, 13.5); // ຫັນໜ້າໄປຕາມທາງແລ່ນ
+                    arte.group.rotation.y = Math.PI - Math.atan2(1.5, 13.5); 
                     
-                    // ອະນິເມຊັນແລ່ນ (ແກວ່ງແຂນຂາ)
                     arte.leftLeg.rotation.x = Math.sin(time * 20) * 0.6;
                     arte.rightLeg.rotation.x = -Math.sin(time * 20) * 0.6;
                     arte.leftArm.rotation.x = Math.sin(time * 20) * 0.6;
                     arte.rightArm.rotation.x = -Math.sin(time * 20) * 0.6;
                 } 
                 else if (t < 11) {
-                    // 4. ອາເຕ້ຮອດປະຕູ ເອື້ອມມືກົດເປີດປະຕູ
                     carGroup.position.z = -7.5;
                     arte.group.position.set(-11.5, 0, -3.5);
-                    arte.group.rotation.y = Math.PI; // ຫັນໜ້າອອກນອກ
+                    arte.group.rotation.y = Math.PI; 
                     arte.leftLeg.rotation.x = 0; arte.rightLeg.rotation.x = 0;
                     arte.leftArm.rotation.x = 0;
-                    arte.rightArm.rotation.x = -Math.PI / 2; // ເອື້ອມມືໄປກົດປະຕູ
+                    arte.rightArm.rotation.x = -Math.PI / 2; 
                     
-                    window.setGateState(true); // ປະຕູເປີດອອກ!
+                    window.setGateState(true); 
                 } 
                 else if (t < 16) {
-                    // 5. ປະຕູເປີດແລ້ວ ປ້າວັນຂັບລົດເຂົ້າມາໃນບ້ານ ອາເຕ້ຢືນໂບກມື
                     let p = (t - 11) / 5;
-                    carGroup.position.z = -7.5 + p * 13.5; // ຂັບມາຮອດ z=6
+                    carGroup.position.z = -7.5 + p * 13.5; 
                     
-                    arte.rightArm.rotation.x = -Math.PI + Math.sin(time * 10) * 0.3; // ຍົກແຂນໂບກມື
+                    arte.rightArm.rotation.x = -Math.PI + Math.sin(time * 10) * 0.3; 
                     arte.rightArm.rotation.z = Math.sin(time * 10) * 0.3;
                 } 
                 else {
-                    // 6. ລົດຈອດໃນບ້ານແລ້ວ ລໍຖ້າເວລາເລີ່ມລູບໃໝ່
                     carGroup.position.z = 6;
-                    arte.rightArm.rotation.x = 0; arte.rightArm.rotation.z = 0; // ເອົາມືລົງ
+                    arte.rightArm.rotation.x = 0; arte.rightArm.rotation.z = 0; 
                 }
                 
-                // ລໍ້ລົດໝຸນເວລາລົດແລ່ນ
                 if (t < 5 || (t >= 11 && t < 16)) {
                     w1.rotation.x -= 0.2; w2.rotation.x -= 0.2;
                     w3.rotation.x -= 0.2; w4.rotation.x -= 0.2;
@@ -926,18 +930,15 @@
             
             let peBaseZ = 5;
             pe.update = (time) => {
-                // ຍ່າງໄປມາຕາມລວງຍາວເດີ່ນບ້ານ
                 let moveZ = Math.sin(time * 0.5) * 5; 
                 pe.group.position.z = peBaseZ + moveZ;
                 
-                // ຫັນໜ້າໄປຕາມທາງທີ່ຍ່າງ
                 if (Math.cos(time * 0.5) > 0) {
-                    pe.group.rotation.y = 0; // ຍ່າງໄປໜ້າ
+                    pe.group.rotation.y = 0; 
                 } else {
-                    pe.group.rotation.y = Math.PI; // ຍ່າງກັບຫຼັງ
+                    pe.group.rotation.y = Math.PI; 
                 }
 
-                // ທ່າຍ່າງ ແລະ ກວດຂີ້ເຫຍື້ອ
                 pe.leftLeg.rotation.x = Math.sin(time * 5) * 0.4;
                 pe.rightLeg.rotation.x = -Math.sin(time * 5) * 0.4;
                 const sweep = Math.sin(time * 8) * 0.3;
