@@ -8,14 +8,6 @@
     <style>
         body { margin: 0; overflow: hidden; background-color: #87CEEB; font-family: 'Inter', sans-serif; }
         #canvas-container { width: 100vw; height: 100vh; display: block; }
-        #ui-container {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.95); padding: 15px 25px;
-            border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            text-align: center; pointer-events: none;
-        }
-        .instruction { font-size: 14px; color: #333; margin: 0; }
-        .title-text { font-size: 18px; font-weight: bold; color: #1a202c; margin-bottom: 5px; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -23,11 +15,6 @@
 <body>
 
     <div id="canvas-container"></div>
-    <div id="ui-container">
-        <div class="title-text">ເຮືອນໂມເດີນ 3 ຫ້ອງ (ບໍ່ມີຮົ້ວ)</div>
-        <p class="instruction">ໃຊ້ເມົ້າຄລິກຊ້າຍແລ້ວລາກເພື່ອໝຸນເບິ່ງ 360 ອົງສາ</p>
-        <p class="instruction" style="color:#16a34a; font-weight:bold; margin-top:5px;">✅ ອັບເດດ: ເອົາກຳແພງຮົ້ວອອກຕາມຄຳຂໍ</p>
-    </div>
 
     <script>
         // ໃຊ້ IIFE (Immediately Invoked Function Expression) ເພື່ອປ້ອງກັນຕົວແປຊ້ຳຊ້ອນ ແລະ Error ຕ່າງໆ
@@ -434,6 +421,153 @@
             // ໃສ່ຂະໜາດຂອງຕົວເຮືອນ (ແກນ Z - ລວງເລິກ)
             addDim(4.8, 0, 4.8, 3, "3 m", 0.4, 0, -Math.PI / 2); // ຄວາມເລິກຫ້ອງ 1
             addDim(4.8, -3, 4.8, 0, "3 m", 0.4, 0, -Math.PI / 2); // ຄວາມເລິກຫ້ອງ 2
+
+            // --- ສ້າງກຳແພງອ້ອມຮອບ 25x25m (ມີວັກ) ---
+            const fenceGroup = new THREE.Group();
+            scene.add(fenceGroup);
+
+            const fenceMat = new THREE.MeshStandardMaterial({ color: 0xd6d6d6, roughness: 0.9 });
+            const fencePillarMat = new THREE.MeshStandardMaterial({ color: 0x7a7a7a, roughness: 0.8 });
+            const fH = 1.8; // ຄວາມສູງກຳແພງ
+            const fT = 0.15; // ຄວາມໜາກຳແພງ
+            const fP = 0.35; // ຂະໜາດເສົາ
+
+            // ຈຸດພິກັດຂອງກຳແພງ (ທວນເຂັມໂມງ ຈາກແຈຂວາເທິງ)
+            // ແຈຂວາເທິງ (ອີງຈາກແຈຫ້ອງ 2 X=4, Z=-3 ບວກໄລຍະຫ່າງ 1.5m) -> X=5.5, Z=-4.5
+            // ປັບປຸງ: ບໍ່ມີການຫັກວັກຢູ່ດ້ານໜ້າ (ຊ້າຍເທິງ) ແລ້ວ ໃຫ້ເປັນມຸມສາກແທນ
+            const fPoints = [
+                new THREE.Vector3(5.5, 0, -4.5),   // 1. ແຈຂວາເທິງ (ຈຸດເລີ່ມຕົ້ນ)
+                new THREE.Vector3(-19.5, 0, -4.5), // 2. ຍິງຍາວຊື່ໆໄປຊ້າຍສຸດ (ເປັນມຸມສາກ)
+                new THREE.Vector3(-19.5, 0, 15.5), // 3. ຊ້າຍລຸ່ມ (ກ່ອນເຂົ້າວັກຊ້າຍລຸ່ມ)
+                new THREE.Vector3(-14.5, 0, 15.5), // 4. ເຂົ້າວັກຊ້າຍລຸ່ມ (ໄປຂວາ)
+                new THREE.Vector3(-14.5, 0, 20.5), // 5. ລຸ່ມສຸດຂອງວັກ (ລົງມາ)
+                new THREE.Vector3(5.5, 0, 20.5),   // 6. ແຈຂວາລຸ່ມ
+                new THREE.Vector3(5.5, 0, -4.5)    // 7. ວົນກັບມາແຈຂວາເທິງເພື່ອປິດກອບ
+            ];
+
+            // ຟັງຊັນແຕ້ມກຳແພງ ແລະ ເສົາຕາມຈຸດຕ່າງໆ
+            for (let i = 0; i < fPoints.length - 1; i++) {
+                const p1 = fPoints[i];
+                const p2 = fPoints[i+1];
+                const dist = p1.distanceTo(p2);
+                
+                // ສ້າງໂຄງສ້າງເສົາລໍຖ້າໄວ້
+                const pGeo = new THREE.BoxGeometry(fP, fH + 0.1, fP);
+                pGeo.translate(0, (fH + 0.1)/2, 0);
+
+                if (i === 0) {
+                    // --- ກຳແພງດ້ານຫຼັງ (ຍ້າຍປະຕູມາໄວ້ດ້ານດຽວກັບເຮືອນ ຕາມລູກສອນ) ---
+                    const gateX1 = -9;  // ເສົາປະຕູເບື້ອງຂວາ (ເບິ່ງຈາກກ້ອງ)
+                    const gateX2 = -14; // ເສົາປະຕູເບື້ອງຊ້າຍ (ກວ້າງ 5 ແມັດ)
+                    const gateW = 5; 
+                    
+                    // ກຳແພງຍ່ອຍ 1 (ຂວາ: ຈາກແຈຂວາຫາເສົາປະຕູ) 
+                    const w1Dist = Math.abs(p1.x - gateX1); 
+                    const w1Geo = new THREE.BoxGeometry(w1Dist, fH, fT);
+                    w1Geo.translate(0, fH/2, 0);
+                    const w1 = new THREE.Mesh(w1Geo, fenceMat);
+                    w1.position.set((p1.x + gateX1)/2, 0, p1.z); 
+                    w1.castShadow = true; w1.receiveShadow = true;
+                    fenceGroup.add(w1);
+                    
+                    // ກຳແພງຍ່ອຍ 2 (ຊ້າຍ: ຈາກເສົາປະຕູຫາແຈຊ້າຍ)
+                    const w2Dist = Math.abs(gateX2 - p2.x); 
+                    const w2Geo = new THREE.BoxGeometry(w2Dist, fH, fT);
+                    w2Geo.translate(0, fH/2, 0);
+                    const w2 = new THREE.Mesh(w2Geo, fenceMat);
+                    w2.position.set((gateX2 + p2.x)/2, 0, p1.z); 
+                    w2.castShadow = true; w2.receiveShadow = true;
+                    fenceGroup.add(w2);
+
+                    // ເສົາຫຼັກຢູ່ມຸມເດີມ (p1)
+                    const pillar = new THREE.Mesh(pGeo, fencePillarMat);
+                    pillar.position.copy(p1);
+                    pillar.castShadow = true; pillar.receiveShadow = true;
+                    fenceGroup.add(pillar);
+                    
+                    // ເສົາຂອບປະຕູຂວາ-ຊ້າຍ
+                    const pRight = new THREE.Mesh(pGeo, fencePillarMat);
+                    pRight.position.set(gateX1, 0, p1.z); pRight.castShadow = true; pRight.receiveShadow = true;
+                    fenceGroup.add(pRight);
+                    
+                    const pLeft = new THREE.Mesh(pGeo, fencePillarMat);
+                    pLeft.position.set(gateX2, 0, p1.z); pLeft.castShadow = true; pLeft.receiveShadow = true;
+                    fenceGroup.add(pLeft);
+                    
+                    // ເສົາຍ່ອຍສຳລັບກຳແພງຂວາ
+                    const numSub1 = Math.floor(w1Dist / 3.5);
+                    for(let j=1; j<numSub1; j++) {
+                        const subP = new THREE.Mesh(pGeo, fencePillarMat);
+                        subP.position.set(p1.x - j*(w1Dist/numSub1), 0, p1.z);
+                        subP.castShadow = true; subP.receiveShadow = true;
+                        fenceGroup.add(subP);
+                    }
+                    
+                    // ເສົາຍ່ອຍສຳລັບກຳແພງຊ້າຍ
+                    const numSub2 = Math.floor(w2Dist / 3.5);
+                    for(let j=1; j<numSub2; j++) {
+                        const subP = new THREE.Mesh(pGeo, fencePillarMat);
+                        subP.position.set(gateX2 - j*(w2Dist/numSub2), 0, p1.z);
+                        subP.castShadow = true; subP.receiveShadow = true;
+                        fenceGroup.add(subP);
+                    }
+
+                    // --- ສ້າງປະຕູຮົ້ວເຫຼັກສີດຳ (Sliding Gate) ---
+                    const gateGroup = new THREE.Group();
+                    const ironMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.5, metalness: 0.9 });
+                    const frameThick = 0.06;
+                    
+                    const fTop = new THREE.Mesh(new THREE.BoxGeometry(gateW, frameThick, frameThick), ironMat);
+                    fTop.position.set(0, fH - frameThick/2, 0); fTop.castShadow = true; gateGroup.add(fTop);
+                    
+                    const fBot = new THREE.Mesh(new THREE.BoxGeometry(gateW, frameThick, frameThick), ironMat);
+                    fBot.position.set(0, frameThick/2 + 0.05, 0); fBot.castShadow = true; gateGroup.add(fBot);
+                    
+                    const fL = new THREE.Mesh(new THREE.BoxGeometry(frameThick, fH, frameThick), ironMat);
+                    fL.position.set(-gateW/2 + frameThick/2, fH/2, 0); fL.castShadow = true; gateGroup.add(fL);
+                    
+                    const fR = new THREE.Mesh(new THREE.BoxGeometry(frameThick, fH, frameThick), ironMat);
+                    fR.position.set(gateW/2 - frameThick/2, fH/2, 0); fR.castShadow = true; gateGroup.add(fR);
+                    
+                    const numBars = 40;
+                    const barGeo = new THREE.BoxGeometry(0.02, fH, 0.02);
+                    for(let b=1; b<numBars; b++) {
+                        const bar = new THREE.Mesh(barGeo, ironMat);
+                        bar.position.set(-gateW/2 + b*(gateW/numBars), fH/2, 0);
+                        bar.castShadow = true; gateGroup.add(bar);
+                    }
+                    
+                    // ຈັດວາງປະຕູ: ຍັບເຂົ້າໄປໃນບ້ານ (Z + 0.12) ແລະ ເລື່ອນເປີດໄປທາງຊ້າຍ (-2.0 ແມັດ) 
+                    const slideOffset = -2.0; 
+                    gateGroup.position.set((gateX1 + gateX2)/2 + slideOffset, 0, p1.z + 0.12); 
+                    fenceGroup.add(gateGroup);
+
+                } else {
+                    // ສ້າງກຳແພງປົກກະຕິ
+                    const wGeo = new THREE.BoxGeometry(dist, fH, fT);
+                    wGeo.translate(0, fH/2, 0);
+                    const wall = new THREE.Mesh(wGeo, fenceMat);
+                    wall.position.copy(p1).lerp(p2, 0.5); // ວາງໄວ້ເຄິ່ງກາງລະຫວ່າງ 2 ຈຸດ
+                    wall.rotation.y = -Math.atan2(p2.z - p1.z, p2.x - p1.x); // ໝຸນໃຫ້ເຂົ້າແນວ
+                    wall.castShadow = true; wall.receiveShadow = true;
+                    fenceGroup.add(wall);
+
+                    // ສ້າງເສົາຫຼັກຢູ່ທຸກໆຈຸດຫັກມຸມ (ຍົກເວັ້ນຈຸດສຸດທ້າຍ)
+                    const pillar = new THREE.Mesh(pGeo, fencePillarMat);
+                    pillar.position.copy(p1);
+                    pillar.castShadow = true; pillar.receiveShadow = true;
+                    fenceGroup.add(pillar);
+
+                    // ແບ່ງເສົາຍ່ອຍຖ້າໄລຍະຫ່າງຍາວເກີນໄປ
+                    const numSub = Math.floor(dist / 3.5);
+                    for(let j=1; j<numSub; j++) {
+                        const subP = new THREE.Mesh(pGeo, fencePillarMat);
+                        subP.position.copy(new THREE.Vector3().lerpVectors(p1, p2, j/numSub));
+                        subP.castShadow = true; subP.receiveShadow = true;
+                        fenceGroup.add(subP);
+                    }
+                }
+            }
 
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
