@@ -436,7 +436,7 @@
             addDim(4.8, -3, 4.8, -4.5, "1.5 m", 0.4, 0, -Math.PI / 2); 
             addDim(4, -1.5, 5.5, -1.5, "1.5 m", 0, -0.4, 0); 
 
-            /* STREAMING_CHUNK:Constructing boundary walls, the main sliding gate, and the warning sign... */
+            /* STREAMING_CHUNK:Constructing boundary walls and the main sliding gate... */
             const fenceGroup = new THREE.Group();
             scene.add(fenceGroup);
 
@@ -446,7 +446,7 @@
             let targetGateSlide = 0;
             let currentGateSlide = 0;
             
-            // ຟັງຊັນສຳລັບເປີດ/ປິດ ປະຕູຮົ້ວ
+            // ຟັງຊັນສຳລັບເປີດ/ປິດ ປະຕູຮົ້ວ (ໃຊ້ຮ່ວມກັນທັງປຸ່ມກົດ ແລະ ອະນິເມຊັນອັດຕະໂນມັດ)
             window.setGateState = function(open) {
                 if (isGateOpen !== open) {
                     isGateOpen = open;
@@ -524,65 +524,6 @@
 
                     const pillarG2 = new THREE.Mesh(pGeo, fencePillarMat);
                     pillarG2.position.copy(gatePos2); pillarG2.castShadow = true; fenceGroup.add(pillarG2);
-
-                    // --- ສ້າງປ້າຍ "ປິດປະຕູຮົ້ວ" ຕິດທີ່ເສົາ ---
-                    const signCanvas = document.createElement('canvas');
-                    signCanvas.width = 256; signCanvas.height = 128;
-                    const sCtx = signCanvas.getContext('2d');
-                    
-                    // ພື້ນຫຼັງປ້າຍສີແດງ
-                    sCtx.fillStyle = '#dc2626';
-                    sCtx.fillRect(0, 0, 256, 128);
-                    
-                    // ຂອບປ້າຍສີຂາວ
-                    sCtx.strokeStyle = '#ffffff';
-                    sCtx.lineWidth = 8;
-                    sCtx.strokeRect(4, 4, 248, 120);
-                    
-                    // ຕົວໜັງສື
-                    sCtx.font = 'bold 50px "Noto Sans Lao", Arial';
-                    sCtx.fillStyle = '#ffffff';
-                    sCtx.textAlign = 'center';
-                    sCtx.textBaseline = 'middle';
-                    sCtx.fillText('ປິດປະຕູຮົ້ວ', 128, 64);
-                    
-                    const signTex = new THREE.CanvasTexture(signCanvas);
-                    const signMat = new THREE.MeshBasicMaterial({ map: signTex });
-                    // ຂະໜາດປ້າຍ 0.8m x 0.4m
-                    const signMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.4), signMat);
-                    
-                    // ຕິດປ້າຍໃສ່ກຳແພງ (w1) ໃກ້ໆກັບເສົາ gatePos1 (ເບື້ອງຊ້າຍຂອງປະຕູ)
-                    // ຫັນໜ້າປ້າຍອອກໄປນອກບ້ານ (+Z)
-                    signMesh.position.copy(gatePos1);
-                    signMesh.position.x += 0.5; // ຍັບມາທາງກຳແພງໜ້ອຍໜຶ່ງ
-                    signMesh.position.y = fH - 0.4; // ຕິດສູງໆແນ່
-                    signMesh.position.z += (fT / 2) + 0.01; // ແປະໄວ້ໜ້າກຳແພງ (ນອກບ້ານ)
-                    signMesh.rotation.y = 0; // ຫັນໜ້າອອກນອກ
-                    fenceGroup.add(signMesh);
-
-                    // ສ້າງອີກປ້າຍໜຶ່ງຕິດດ້ານໃນບ້ານ (-Z) ເພື່ອໃຫ້ຄົນໃນບ້ານເຫັນນຳ
-                    const signMeshInside = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.4), signMat);
-                    signMeshInside.position.copy(gatePos1);
-                    signMeshInside.position.x += 0.5; 
-                    signMeshInside.position.y = fH - 0.4; 
-                    signMeshInside.position.z -= (fT / 2) + 0.01; // ແປະໄວ້ຫຼັງກຳແພງ (ໃນບ້ານ)
-                    signMeshInside.rotation.y = Math.PI; // ຫັນໜ້າເຂົ້າໃນ
-                    fenceGroup.add(signMeshInside);
-                    // ------------------------------------
-
-                    const numSub1 = Math.floor(dist1 / 3.5);
-                    for(let j=1; j<numSub1; j++) {
-                        const subP = new THREE.Mesh(pGeo, fencePillarMat);
-                        subP.position.copy(new THREE.Vector3().lerpVectors(p1, gatePos1, j/numSub1));
-                        subP.castShadow = true; fenceGroup.add(subP);
-                    }
-
-                    const numSub2 = Math.floor(dist2 / 3.5);
-                    for(let j=1; j<numSub2; j++) {
-                        const subP = new THREE.Mesh(pGeo, fencePillarMat);
-                        subP.position.copy(new THREE.Vector3().lerpVectors(gatePos2, p2, j/numSub2));
-                        subP.castShadow = true; fenceGroup.add(subP);
-                    }
 
                     const gateGroup = new THREE.Group();
                     const ironMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.5, metalness: 0.9 });
