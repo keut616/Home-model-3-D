@@ -34,14 +34,7 @@
 
     <div id="canvas-container"></div>
 
-    <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10" style="display:none;" id="ui-container">
-        <button id="toggleGateBtn" class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white text-lg font-bold rounded-full shadow-[0_4px_15px_rgba(0,0,0,0.3)] border-2 border-white/50 transition-all duration-300">
-            ເປີດປະຕູຮົ້ວ
-        </button>
-    </div>
-
     <script>
-        /* STREAMING_CHUNK:Loading External Scripts Dynamically... */
         function loadScript(src) {
             return new Promise((resolve, reject) => {
                 const script = document.createElement('script');
@@ -58,7 +51,6 @@
                 await loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js');
                 
                 document.getElementById('loading-screen').style.display = 'none';
-                document.getElementById('ui-container').style.display = 'block';
 
                 start3DEngine();
             } catch (error) {
@@ -70,7 +62,6 @@
         initApp();
 
         function start3DEngine() {
-            /* STREAMING_CHUNK:Setting up Scene, Camera, and Lights... */
             const scene = new THREE.Scene();
             scene.fog = new THREE.FogExp2(0x87CEEB, 0.015);
             
@@ -105,7 +96,6 @@
             dirLight.shadow.camera.bottom = -30;
             scene.add(dirLight);
 
-            /* STREAMING_CHUNK:Creating ground and materials... */
             const groundGeometry = new THREE.PlaneGeometry(200, 200);
             const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x556B2F, roughness: 0.8 });
             const ground = new THREE.Mesh(groundGeometry, groundMaterial);
@@ -123,7 +113,6 @@
             const woodWallMaterial = new THREE.MeshStandardMaterial({ color: 0xA0522D, roughness: 0.8 });
             const gableMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.9 }); 
 
-            /* STREAMING_CHUNK:Defining helper functions for house building... */
             const houseGroup = new THREE.Group();
             scene.add(houseGroup);
 
@@ -234,7 +223,6 @@
                 return group;
             }
 
-            /* STREAMING_CHUNK:Constructing house walls and pillars... */
             const pillarPositions = [
                 [4, 0, 3], [4, 0, 0], [4, 0, -3], 
                 [0, 0, 3], [0, 0, 0], [0, 0, -3], 
@@ -247,66 +235,105 @@
                 let isShortPillar = (index >= 6); 
                 let currentHeight = isShortPillar ? shortWallHeight : wallHeight;
 
-                if (isShortPillar) {
-                    const pRoundGeoShort = new THREE.CylinderGeometry(pillarSize/1.5, pillarSize/1.5, currentHeight, 16);
-                    pRoundGeoShort.translate(0, currentHeight/2, 0); 
-                    pMesh = new THREE.Mesh(pRoundGeoShort, pillarMaterial);
-                } else {
-                    const pGeoTall = new THREE.BoxGeometry(pillarSize, currentHeight, pillarSize);
-                    pGeoTall.translate(0, currentHeight/2, 0);
-                    pMesh = new THREE.Mesh(pGeoTall, pillarMaterial);
-                }
+                // ປ່ຽນໃຫ້ທຸກເສົາເປັນຮູບສີ່ລ່ຽມ (BoxGeometry) ແບບດຽວກັນໝົດ
+                const pGeoTall = new THREE.BoxGeometry(pillarSize, currentHeight, pillarSize);
+                pGeoTall.translate(0, currentHeight/2, 0);
+                pMesh = new THREE.Mesh(pGeoTall, pillarMaterial);
+                
                 pMesh.position.set(pos[0], 0, pos[2]);
                 pMesh.castShadow = true; pMesh.receiveShadow = true;
                 houseGroup.add(pMesh);
             });
 
-            const winWidth = 1.5, winHeight = 1.2, winY = 0.9;
-            const doorWidth = 0.9, doorHeight = 2.1;
+        const winWidth = 1.5, winHeight = 1.2, winY = 0.9;
+        const doorWidth = 0.9, doorHeight = 2.1;
 
-            const wall1_bottom = createSolidWall(4 - pillarSize, wallHeight, wallThickness, wallMaterial);
-            wall1_bottom.position.set(2, 0, 3); houseGroup.add(wall1_bottom);
-            const wall1_right = createSolidWall(wallThickness, wallHeight, 3 - pillarSize, wallMaterial);
-            wall1_right.position.set(4, 0, 1.5); houseGroup.add(wall1_right);
-            const wall1_top = createWallWithHole(4 - pillarSize, wallHeight, wallThickness, -1, doorWidth, 0, doorHeight, wallMaterial);
-            wall1_top.position.set(2, 0, 0); houseGroup.add(wall1_top);
-            
-            const door1 = createDoor(doorWidth, doorHeight);
-            door1.position.set(2 - 1, 0, 0); door1.rotation.y = Math.PI; 
-            houseGroup.add(door1);
+        // ປັບຂະໜາດຝາໜ້າຫ້ອງ 1 ໃຫ້ຍາວຂຶ້ນ ຍ້ອນຝາຂ້າງຫຍັບໄປທາງຊ້າຍ 1 ແມັດ
+        const wall1_bottom = createSolidWall(4.8, wallHeight, wallThickness, wallMaterial);
+        wall1_bottom.position.set(1.4, 0, 3); houseGroup.add(wall1_bottom);
+        
+        // --- ຝາຂ້າງຫ້ອງ 1 (ເບື້ອງກຳແພງຮົ້ວ) ---
+        const wall1_right_length = 3 - pillarSize;
+        // ປັບຄ່າ Offset ເພື່ອໃຫ້ຮູປະຕູຫຍັບໄປຕິດແຈເສົາ
+        const holeOffset1 = 0.85; 
 
-            const wall1_left_length = 3 - pillarSize;
-            const wall1_left = createWallWithHole(wall1_left_length, wallHeight, wallThickness, 0, winWidth, winY, winHeight, wallMaterial);
-            wall1_left.position.set(0, 0, 1.5); wall1_left.rotation.y = Math.PI / 2; houseGroup.add(wall1_left);
-            const win1 = createSlidingWindow(winWidth, winHeight);
-            win1.position.set(0, winY + winHeight/2, 1.5); win1.rotation.y = Math.PI / 2; houseGroup.add(win1);
+        const wall1_right = createWallWithHole(wall1_right_length, wallHeight, wallThickness, holeOffset1, doorWidth, 0, doorHeight, wallMaterial);
+        wall1_right.position.set(4, 0, 1.5);
+        wall1_right.rotation.y = Math.PI / 2;
+        houseGroup.add(wall1_right);
 
-            const wall2_top = createWallWithHole(4 - pillarSize, wallHeight, wallThickness, 0, winWidth, winY, winHeight, wallMaterial);
-            wall2_top.position.set(2, 0, -3); houseGroup.add(wall2_top);
+        // --- ປະຕູຂ້າງຫ້ອງ 1 (ເປີດອອກຫາກຳແພງ) ---
+        const door1_side = createDoor(doorWidth, doorHeight);
+        // ຕັ້ງຕຳແໜ່ງປະຕູໃຫ້ກົງກັບຮູທີ່ເຈາະໄວ້ຕິດແຈເສົາ
+        door1_side.position.set(4, 0, 1.5 - holeOffset1); 
+        door1_side.rotation.y = Math.PI / 2;
+        // ຕັ້ງຄ່າໃຫ້ບານປະຕູເປີດອ້າອອກໄປທາງນອກ (ຫາກຳແພງ)
+        door1_side.children[0].rotation.y = Math.PI / 2; 
+        houseGroup.add(door1_side);
+        
+        // ກໍ່ຝາແບ່ງຫ້ອງ 1 ແລະ 2 ພ້ອມທັງເຈາະປະຕູຫາກັນ (ປັບຂະໜາດ ແລະ ຕຳແໜ່ງຮູປະຕູໃໝ່)
+        const wall1_top = createWallWithHole(4.8, wallHeight, wallThickness, -0.25, doorWidth, 0, doorHeight, wallMaterial);
+        wall1_top.position.set(1.4, 0, 0); houseGroup.add(wall1_top);
+        
+        const doorBetween = createDoor(doorWidth, doorHeight);
+        doorBetween.position.set(1.15, 0, 0); // ຕຳແໜ່ງປະຕູ ໃກ້ເສົາກາງ (x=0)
+        doorBetween.children[0].rotation.y = -Math.PI / 3; // ໄຂບານປະຕູອອກໄປທາງຫ້ອງເລກ 1 (ທິດ +z)
+        houseGroup.add(doorBetween);
+
+        // ກໍ່ຝາຫ້ອງເລກ 1 ດ້ານຊ້າຍ (ເອົາປ່ອງຢ້ຽມອອກ) ແລະ ເຈາະປະຕູແທນ ໃຫ້ຄືກັບຫ້ອງເລກ 2
+        // ຫຍັບຝາຖອຍມາທາງຫ້ອງເລກ 3 ປະມານ 1 ແມັດ (x = -1)
+        const wall1_left_length = 3 - pillarSize;
+        const wall1_left = createWallWithHole(wall1_left_length, wallHeight, wallThickness, 0.85, doorWidth, 0, doorHeight, wallMaterial);
+        wall1_left.position.set(-1, 0, 1.5); 
+        wall1_left.rotation.y = Math.PI / 2; 
+        houseGroup.add(wall1_left);
+        
+        const door1 = createDoor(doorWidth, doorHeight);
+        door1.position.set(-1, 0, 0.65); // ຕຳແໜ່ງປະຕູ ໃຫ້ພໍດີກັບຮູໃໝ່
+        door1.rotation.y = -Math.PI / 2; // ປິ່ນຕາມຝາ ແລະ ເປີດເຂົ້າໃນຫ້ອງ
+        houseGroup.add(door1);
+
+        const wall2_top = createWallWithHole(4 - pillarSize, wallHeight, wallThickness, 0, winWidth, winY, winHeight, wallMaterial);
+        wall2_top.position.set(2, 0, -3); houseGroup.add(wall2_top);
             const win2 = createSlidingWindow(winWidth, winHeight);
             win2.position.set(2, winY + winHeight/2, -3); houseGroup.add(win2);
             const wall2_right = createSolidWall(wallThickness, wallHeight, 3 - pillarSize, wallMaterial);
             wall2_right.position.set(4, 0, -1.5); houseGroup.add(wall2_right);
 
-            const wall3_top = createWallWithHole(4 - pillarSize, shortWallHeight, wallThickness, -0.5, winWidth, winY, winHeight, wallMaterial);
-            wall3_top.position.set(-2, 0, -3); houseGroup.add(wall3_top);
-            const win3_top = createSlidingWindow(winWidth, winHeight);
-            win3_top.position.set(-2 - 0.5, winY + winHeight/2, -3); houseGroup.add(win3_top);
+            // ກໍ່ຕັນຝາຫ້ອງເລກ 2 (ດ້ານຊ້າຍ x=0) ແລະ ເຈາະປະຕູຕິດເສົາກາງ
+            const wall2_left_length = 3 - pillarSize;
+            const wall2_left = createWallWithHole(wall2_left_length, wallHeight, wallThickness, -0.85, doorWidth, 0, doorHeight, wallMaterial);
+            wall2_left.position.set(0, 0, -1.5); 
+            wall2_left.rotation.y = Math.PI / 2; 
+            houseGroup.add(wall2_left);
+            
+            const door2 = createDoor(doorWidth, doorHeight);
+            door2.position.set(0, 0, -0.65); // ຕຳແໜ່ງກາງປະຕູ ໃຫ້ພໍດີກັບຮູ
+            door2.rotation.y = -Math.PI / 2; // ປິ່ນກົງກັນຂ້າມ ເພື່ອຍ້າຍບານພັບໄປອີກເບື້ອງ
+            door2.children[0].rotation.y = Math.PI / 4; // ປັບທິດທາງບານພັບໃຫ້ເປີດເຂົ້າໃນຫ້ອງ
+            houseGroup.add(door2);
 
-            const wall3_left_full_length = 3 - pillarSize; 
             const sideSlideDoorWidth = 1.8; 
-            const wall3_left_mod = createWallWithHole(wall3_left_full_length, shortWallHeight, wallThickness, 0, sideSlideDoorWidth, 0, doorHeight, wallMaterial);
-            wall3_left_mod.position.set(-4, 0, -1.5); 
+
+            // ກໍ່ຕັນຝາໜ້າຫ້ອງ 3 (z=3) (ປ່ຽນຈາກປະຕູແກ້ວເປັນຝາຕັນ)
+            // ປັບຂະໜາດຝາໜ້າຫ້ອງ 3 ໃຫ້ສັ້ນລົງ ຍ້ອນຝາຫ້ອງ 1 ຫຍັບເຂົ້າມາ (ຍາວເຫຼືອ 2.8 ແມັດ)
+            const wall3_top = createSolidWall(2.8, shortWallHeight, wallThickness, wallMaterial);
+            wall3_top.position.set(-2.4, 0, 3); houseGroup.add(wall3_top);
+
+            // ປ່ຽນຝາຂ້າງຫ້ອງ 3 (x=-4) ໃຫ້ເປັນປ່ອງຢ້ຽມ
+            const wall3_left_full_length = 3 - pillarSize; 
+            const wall3_left_mod = createWallWithHole(wall3_left_full_length, shortWallHeight, wallThickness, 0, winWidth, winY, winHeight, wallMaterial);
+            wall3_left_mod.position.set(-4, 0, 1.5); 
             wall3_left_mod.rotation.y = Math.PI / 2; houseGroup.add(wall3_left_mod);
 
-            const sideSlideGlassDoor = createSlidingWindow(sideSlideDoorWidth, doorHeight);
-            sideSlideGlassDoor.position.set(-4, doorHeight/2, -1.5); 
-            sideSlideGlassDoor.rotation.y = Math.PI / 2; houseGroup.add(sideSlideGlassDoor);
+            const win3_side = createSlidingWindow(winWidth, winHeight);
+            win3_side.position.set(-4, winY + winHeight/2, 1.5); 
+            win3_side.rotation.y = Math.PI / 2; houseGroup.add(win3_side);
 
-            const wall3_bottom = createSolidWall(4 - pillarSize, shortWallHeight, wallThickness, wallMaterial);
-            wall3_bottom.position.set(-2, 0, 0); houseGroup.add(wall3_bottom);
+            // ປັບຂະໜາດຝາຫຼັງຫ້ອງ 3 ໃຫ້ສັ້ນລົງ ຍ້ອນຝາຫ້ອງ 1 ຫຍັບເຂົ້າມາ (ຍາວເຫຼືອ 2.8 ແມັດ)
+            const wall3_bottom = createSolidWall(2.8, shortWallHeight, wallThickness, wallMaterial);
+            wall3_bottom.position.set(-2.4, 0, 0); houseGroup.add(wall3_bottom);
 
-            /* STREAMING_CHUNK:Building the house roof... */
             const roofGroup = new THREE.Group();
             scene.add(roofGroup);
             
@@ -369,7 +396,6 @@
             const gable4 = createGable(4, 0, gable3HeightR, wallThickness, wallMaterial); 
             gable4.position.set(-2, topOfShortWallHeight + gable3HeightR/2, 3); roofGroup.add(gable4);
 
-            /* STREAMING_CHUNK:Adding room labels and dimensions... */
             const annotationGroup = new THREE.Group();
             scene.add(annotationGroup);
 
@@ -382,9 +408,10 @@
                 mesh.rotation.x = -Math.PI / 2; mesh.position.set(x, 0.21, z); return mesh;
             }
 
-            annotationGroup.add(createRoomLabel('1', 2, 1.5));
+            // ອັບເດດຕຳແໜ່ງປ້າຍໝາຍເລກຫ້ອງໃຫ້ຢູ່ເຄິ່ງກາງພໍດີ ຫຼັງຈາກປ່ຽນຂະໜາດຫ້ອງ
+            annotationGroup.add(createRoomLabel('1', 1.5, 1.5));
             annotationGroup.add(createRoomLabel('2', 2, -1.5));
-            annotationGroup.add(createRoomLabel('3', -2, -1.5));
+            annotationGroup.add(createRoomLabel('3', -2.5, 1.5));
 
             function createDimensionLine(p1, p2, text, textOffsetX, textOffsetZ, rotation) {
                 const group = new THREE.Group();
@@ -426,7 +453,8 @@
 
             const dimY = 0.22; 
             function addDim(x1, z1, x2, z2, text, ox, oz, rot) {
-                annotationGroup.add(createDimensionLine(new THREE.Vector3(x1, dimY, z1), new THREE.Vector3(x2, dimY, z2), text, ox, oz, rot));
+                // ເອົາການສະແດງເສັ້ນບອກຂະໜາດອອກ
+                // annotationGroup.add(createDimensionLine(new THREE.Vector3(x1, dimY, z1), new THREE.Vector3(x2, dimY, z2), text, ox, oz, rot));
             }
 
             addDim(-4, -4.0, 0, -4.0, "4 m", 0, -0.4, 0); 
@@ -436,7 +464,6 @@
             addDim(4.8, -3, 4.8, -4.5, "1.5 m", 0.4, 0, -Math.PI / 2); 
             addDim(4, -1.5, 5.5, -1.5, "1.5 m", 0, -0.4, 0); 
 
-            /* STREAMING_CHUNK:Constructing boundary walls and the main sliding gate... */
             const fenceGroup = new THREE.Group();
             scene.add(fenceGroup);
 
@@ -451,19 +478,6 @@
                     isGateOpen = open;
                     // ປ່ຽນຄ່າຈາກ 4.8 ເປັນ -4.8 ເພື່ອໃຫ້ປະຕູເລື່ອນໄປທາງກົງກັນຂ້າມ
                     targetGateSlide = open ? -4.8 : 0.0;
-                    
-                    const toggleBtn = document.getElementById('toggleGateBtn');
-                    if (toggleBtn) {
-                        if (open) {
-                            toggleBtn.innerText = 'ປິດປະຕູຮົ້ວ';
-                            toggleBtn.classList.replace('bg-blue-600', 'bg-red-600');
-                            toggleBtn.classList.replace('hover:bg-blue-700', 'hover:bg-red-700');
-                        } else {
-                            toggleBtn.innerText = 'ເປີດປະຕູຮົ້ວ';
-                            toggleBtn.classList.replace('bg-red-600', 'bg-blue-600');
-                            toggleBtn.classList.replace('hover:bg-red-700', 'hover:bg-blue-700');
-                        }
-                    }
                 }
             };
 
@@ -577,7 +591,6 @@
                 }
             }
 
-            /* STREAMING_CHUNK:Building the toilet setup... */
             const toiletGroup = new THREE.Group();
             scene.add(toiletGroup);
 
@@ -623,404 +636,13 @@
             toiletGroup.position.set(3.5, 0, 18.5);
             toiletGroup.rotation.y = Math.PI; 
             
-            /* STREAMING_CHUNK:Building Cars & Animated Characters... */
-            const characters = []; 
-            const textureLoader = new THREE.TextureLoader();
-            textureLoader.crossOrigin = "Anonymous"; 
-            
-            function createNameTag(name) {
-                const canvas = document.createElement('canvas');
-                canvas.width = 256; canvas.height = 64;
-                const ctx = canvas.getContext('2d');
-                ctx.font = 'bold 36px "Noto Sans Lao", Arial';
-                ctx.textAlign = 'center';
-                ctx.fillStyle = 'white';
-                ctx.fillText(name, 128, 45);
-                ctx.strokeStyle = 'black';
-                ctx.lineWidth = 3;
-                ctx.strokeText(name, 128, 45);
-                ctx.fillText(name, 128, 45); 
+            // ໂຄ້ດສ່ວນຂອງລົດ ແລະ ຕົວລະຄອນ (ຄົນ) ຖືກລຶບອອກຕາມຄຳຂໍແລ້ວ
 
-                const tex = new THREE.CanvasTexture(canvas);
-                const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
-                const sprite = new THREE.Sprite(mat);
-                sprite.scale.set(1.5, 0.375, 1);
-                return sprite;
-            }
-
-            function createPerson(name, shirtColor, pantsColor, scale, hasLongHair = false, imgName = "") {
-                const group = new THREE.Group();
-                group.scale.set(scale, scale, scale);
-                
-                const skinMat = new THREE.MeshStandardMaterial({ color: 0xffdcb3, roughness: 0.6 });
-                const shirtMat = new THREE.MeshStandardMaterial({ color: shirtColor, roughness: 0.8 });
-                const pantsMat = new THREE.MeshStandardMaterial({ color: pantsColor, roughness: 0.8 });
-                
-                const headGroup = new THREE.Group();
-                headGroup.position.y = 1.6;
-                
-                const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 16, 16), skinMat);
-                head.castShadow = true; 
-                headGroup.add(head);
-
-                if (imgName) {
-                    const imgUrl = "https://keut616.github.io/FAMILY/" + imgName;
-                    const faceTex = textureLoader.load(imgUrl);
-                    const faceMat = new THREE.MeshBasicMaterial({ map: faceTex, transparent: true });
-                    const facePlane = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 0.35), faceMat);
-                    facePlane.position.set(0, 0, 0.24); 
-                    headGroup.add(facePlane);
-                }
-                group.add(headGroup);
-                
-                if(hasLongHair) {
-                    const hair = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.6, 0.5), new THREE.MeshStandardMaterial({color: 0x111111}));
-                    hair.position.set(0, 1.5, -0.1); hair.castShadow = true; group.add(hair);
-                }
-
-                const nameTag = createNameTag(name);
-                nameTag.position.y = 2.1; group.add(nameTag);
-
-                const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.7, 0.3), shirtMat);
-                body.position.y = 1.15; body.castShadow = true; group.add(body);
-                
-                const createArm = (isLeft) => {
-                    const armPivot = new THREE.Group();
-                    armPivot.position.set(isLeft ? -0.4 : 0.4, 1.4, 0);
-                    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.6), skinMat);
-                    arm.position.y = -0.25; arm.castShadow = true;
-                    armPivot.add(arm);
-                    group.add(armPivot);
-                    return armPivot;
-                };
-                const leftArm = createArm(true);
-                const rightArm = createArm(false);
-
-                const createLeg = (isLeft) => {
-                    const legPivot = new THREE.Group();
-                    legPivot.position.set(isLeft ? -0.15 : 0.15, 0.8, 0);
-                    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.7), pantsMat);
-                    leg.position.y = -0.35; leg.castShadow = true;
-                    legPivot.add(leg);
-                    group.add(legPivot);
-                    return legPivot;
-                };
-                const leftLeg = createLeg(true);
-                const rightLeg = createLeg(false);
-
-                return { group, leftArm, rightArm, leftLeg, rightLeg, body };
-            }
-
-            // 0. ສ້າງລົດເກັງສີຂາວ (ສຳລັບປ້າວັນຂັບ)
-            const carGroup = new THREE.Group();
-            const carBodyMat = new THREE.MeshStandardMaterial({color: 0xffffff, roughness: 0.2, metalness: 0.5}); // ລົດສີຂາວ
-            const carBody = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.7, 5), carBodyMat);
-            carBody.position.y = 0.6; carBody.castShadow = true; carGroup.add(carBody);
-
-            const cabinMat = new THREE.MeshStandardMaterial({color: 0x222222}); // ກະຈົກລົດສີດຳ
-            const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.6, 2.5), cabinMat);
-            cabin.position.set(0, 1.25, -0.5); cabin.castShadow = true; carGroup.add(cabin);
-
-            const wheelMat = new THREE.MeshStandardMaterial({color: 0x111111});
-            const wGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 16); wGeo.rotateZ(Math.PI / 2);
-            const w1 = new THREE.Mesh(wGeo, wheelMat); w1.position.set(1.3, 0.4, 1.5); carGroup.add(w1);
-            const w2 = new THREE.Mesh(wGeo, wheelMat); w2.position.set(-1.3, 0.4, 1.5); carGroup.add(w2);
-            const w3 = new THREE.Mesh(wGeo, wheelMat); w3.position.set(1.3, 0.4, -1.5); carGroup.add(w3);
-            const w4 = new THREE.Mesh(wGeo, wheelMat); w4.position.set(-1.3, 0.4, -1.5); carGroup.add(w4);
-            
-            // ຕົວລະຄອນໃໝ່ ປ້າວັນ (ນັ່ງໃນລົດ)
-            const van = createPerson("ປ້າວັນ", 0xff69b4, 0x111111, 0.85, true, "van.jpg");
-            van.group.position.set(0, 0.7, -0.3); // ນັ່ງໃນຫ້ອງໂດຍສານລົດ
-            van.leftLeg.visible = false; // ເຊື່ອງຂາເພາະນັ່ງໃນລົດ
-            van.rightLeg.visible = false;
-            carGroup.add(van.group);
-            characters.push(van);
-
-            // ເພີ່ມຕົວລະຄອນໃໝ່ ອາຕີ (ນັ່ງໃນລົດມານຳປ້າວັນ)
-            const ati = createPerson("ອາຕີ", 0xffff00, 0x3333ff, 0.6, false, "ati.jpg");
-            ati.group.position.set(0.6, 0.7, 0.5); // ນັ່ງຂ້າງປ້າວັນ
-            ati.leftLeg.visible = false;
-            ati.rightLeg.visible = false;
-            carGroup.add(ati.group);
-            characters.push(ati);
-
-            // ອັບເດດອະນິເມຊັນປ້າວັນ (ລົງລົດແລ້ວຍ່າງໄປຫາຕູ້ເປ້)
-            van.update = (time) => {
-                const cycle = 20;
-                const t = time % cycle;
-                if (t < 16) {
-                    van.group.position.set(0, 0.7, -0.3);
-                    van.group.rotation.y = 0;
-                    van.leftLeg.visible = false;
-                    van.rightLeg.visible = false;
-                    van.leftArm.rotation.x = 0;
-                    van.rightArm.rotation.x = 0;
-                    van.leftLeg.rotation.x = 0;
-                    van.rightLeg.rotation.x = 0;
-                } else {
-                    let p = (t - 16) / 4;
-                    van.leftLeg.visible = true;
-                    van.rightLeg.visible = true;
-                    // ຍ່າງໄປຫາຕູ້ເປ້ (ທຽບກັບຕຳແໜ່ງລົດ)
-                    van.group.position.x = 0 + p * -3.5;
-                    van.group.position.y = 0.7 * (1 - p);
-                    van.group.position.z = -0.3 + p * -1.0;
-                    van.group.rotation.y = -Math.PI / 2; // ຫັນໜ້າໄປທາງຕູ້ເປ້
-                    
-                    van.leftLeg.rotation.x = Math.sin(time * 15) * 0.5;
-                    van.rightLeg.rotation.x = -Math.sin(time * 15) * 0.5;
-                    van.leftArm.rotation.x = Math.sin(time * 15) * 0.5;
-                    van.rightArm.rotation.x = -Math.sin(time * 15) * 0.5;
-                }
-            };
-
-            // ອັບເດດອະນິເມຊັນອາຕີ (ລົງລົດແລ້ວຍ່າງໄປຫາອາເຕ້)
-            ati.update = (time) => {
-                const cycle = 20;
-                const t = time % cycle;
-                if (t < 16) {
-                    ati.group.position.set(0.6, 0.7, 0.5);
-                    ati.group.rotation.y = 0;
-                    ati.leftLeg.visible = false;
-                    ati.rightLeg.visible = false;
-                    ati.leftArm.rotation.x = 0;
-                    ati.rightArm.rotation.x = 0;
-                    ati.leftLeg.rotation.x = 0;
-                    ati.rightLeg.rotation.x = 0;
-                } else {
-                    let p = (t - 16) / 4;
-                    ati.leftLeg.visible = true;
-                    ati.rightLeg.visible = true;
-                    // ຍ່າງໄປຫາອາເຕ້ (ທຽບກັບຕຳແໜ່ງລົດ)
-                    ati.group.position.x = 0.6 + p * 1.0;
-                    ati.group.position.y = 0.7 * (1 - p);
-                    ati.group.position.z = 0.5 + p * -9.5;
-                    ati.group.rotation.y = Math.PI; // ຫັນໜ້າໄປທາງອາເຕ້ (ດ້ານຫຼັງລົດ)
-                    
-                    ati.leftLeg.rotation.x = Math.sin(time * 15) * 0.5;
-                    ati.rightLeg.rotation.x = -Math.sin(time * 15) * 0.5;
-                    ati.leftArm.rotation.x = Math.sin(time * 15) * 0.5;
-                    ati.rightArm.rotation.x = -Math.sin(time * 15) * 0.5;
-                }
-            };
-
-            scene.add(carGroup);
-
-            // 1. ແບ້ງ (ຊຸດກິລາສີແດງ, ຍົກດຳເບວ)
-            const bank = createPerson("ແບ້ງ", 0xff0000, 0x222222, 1.0, false, "bank.jpg");
-            bank.group.position.set(-8, 0, -2); 
-            bank.group.rotation.y = Math.PI / 4;
-            const createDumbbell = () => {
-                const d = new THREE.Group();
-                const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.4), new THREE.MeshStandardMaterial({color: 0x888888}));
-                bar.rotation.x = Math.PI/2; d.add(bar);
-                const wMat = new THREE.MeshStandardMaterial({color: 0x333333});
-                const w1 = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.1), wMat); w1.rotation.x = Math.PI/2; w1.position.z = 0.15; d.add(w1);
-                const w2 = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.1), wMat); w2.rotation.x = Math.PI/2; w2.position.z = -0.15; d.add(w2);
-                return d;
-            };
-            const dbLeft = createDumbbell(); dbLeft.position.set(0, -0.6, 0); bank.leftArm.add(dbLeft);
-            const dbRight = createDumbbell(); dbRight.position.set(0, -0.6, 0); bank.rightArm.add(dbRight);
-            bank.update = (time) => {
-                const angle = Math.sin(time * 3) * 1.5; 
-                bank.leftArm.rotation.x = angle < 0 ? angle : 0;
-                bank.rightArm.rotation.x = angle < 0 ? angle : 0;
-            };
-            scene.add(bank.group); characters.push(bank);
-
-            // 2. ຕູ້ເສີດ (ຊຸດທຳມະດາ, ນັ່ງກິນເບຍໂຕະມົນ ລະບຽງໜ້າຫ້ອງ 1 ໃກ້ເສົາມົນ)
-            const sert = createPerson("ຕູ້ເສີດ", 0x88cc88, 0x8b4513, 1.0, false, "sert.jpg");
-            sert.group.position.set(-2.0, 0, 1.5); 
-            sert.group.rotation.y = -Math.PI / 2; 
-            sert.leftLeg.rotation.x = -Math.PI / 2; 
-            sert.rightLeg.rotation.x = -Math.PI / 2;
-            sert.group.position.y = -0.4; 
-            
-            const tableGroup = new THREE.Group();
-            const tTop = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 0.05), new THREE.MeshStandardMaterial({color: 0xffffff}));
-            tTop.position.y = 0.8; tableGroup.add(tTop);
-            const tLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.8), new THREE.MeshStandardMaterial({color: 0x555555}));
-            tLeg.position.y = 0.4; tableGroup.add(tLeg);
-            tableGroup.position.set(-3.0, 0, 1.5); 
-            scene.add(tableGroup);
-
-            function createStool() {
-                const stool = new THREE.Group();
-                const sTop = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.05), new THREE.MeshStandardMaterial({color: 0x8b4513}));
-                sTop.position.y = 0.4; stool.add(sTop);
-                const sLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.4), new THREE.MeshStandardMaterial({color: 0x555555}));
-                sLeg.position.y = 0.2; stool.add(sLeg);
-                return stool;
-            }
-            const stool1 = createStool(); stool1.position.set(-4.0, 0, 1.5); scene.add(stool1); 
-            const stool2 = createStool(); stool2.position.set(-3.0, 0, 0.5); scene.add(stool2); 
-            const stool3 = createStool(); stool3.position.set(-3.0, 0, 2.5); scene.add(stool3); 
-
-            const beer = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.15), new THREE.MeshStandardMaterial({color: 0xffa500, transparent:true, opacity:0.8}));
-            beer.position.set(0, -0.55, 0.1); sert.rightArm.add(beer);
-            sert.update = (time) => {
-                const lift = Math.sin(time * 1.5);
-                sert.rightArm.rotation.x = lift > 0 ? -lift * 1.8 : 0;
-                sert.rightArm.rotation.z = lift > 0 ? lift * 0.5 : 0;
-            };
-            scene.add(sert.group); characters.push(sert);
-
-            // 3. ອາເຕ້ (ພະເອກແລ່ນໄປໄຂປະຕູໃຫ້ປ້າວັນ)
-            const arte = createPerson("ອາເຕ້", 0x1e90ff, 0x111111, 0.6, false, "arte.jpg");
-            const toyGroup = new THREE.Group();
-            const tBody = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.3), new THREE.MeshStandardMaterial({color: 0xffcc00}));
-            tBody.position.y = 0.2; toyGroup.add(tBody);
-            const tArm = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.1), new THREE.MeshStandardMaterial({color: 0xffcc00}));
-            tArm.position.set(0.2, 0.3, 0); tArm.rotation.z = -Math.PI/4; toyGroup.add(tArm);
-            toyGroup.position.set(-9.5, 0, 10); scene.add(toyGroup);
-            
-            // ອະນິເມຊັນຫຼັກ (ເລື່ອງລາວຂອງອາເຕ້ ແລະ ປ້າວັນ ໃນລູບ 20 ວິນາທີ)
-            arte.update = (time) => {
-                const cycle = 20;
-                const t = time % cycle;
-
-                if (t < 5) {
-                    // 1. ປ້າວັນຂັບລົດມາຈອດໜ້າປະຕູຮົ້ວດ້ານຫຼັງ (-12.5 ແກນ X)
-                    carGroup.position.z = -35 + (t / 5) * 27.5; // ແລ່ນຈາກ -35 ມາຈອດທີ່ -7.5 (ໜ້າປະຕູ)
-                    carGroup.position.x = -12.5;
-                    window.setGateState(false); // ປະຕູປິດ
-                    
-                    // ອາເຕ້ນັ່ງຫຼິ້ນລົດຈົກຢູ່ເດີ່ນ (ຕຳແໜ່ງ -10, 10)
-                    arte.group.position.set(-10, -0.4 * 0.6, 10);
-                    arte.group.rotation.y = 0;
-                    arte.leftLeg.rotation.x = -Math.PI / 2;
-                    arte.rightLeg.rotation.x = -Math.PI / 2;
-                    arte.leftArm.rotation.x = -0.8 + Math.cos(time * 8) * 0.3;
-                    arte.rightArm.rotation.x = -0.5 + Math.sin(time * 4) * 0.2;
-                    arte.rightArm.rotation.z = 0;
-                    toyGroup.rotation.y = Math.sin(time * 2) * 0.3; 
-                    tArm.rotation.z = -Math.PI/4 + Math.sin(time * 4) * 0.2;
-                } 
-                else if (t < 6) {
-                    // 2. ລົດຈອດແລ້ວ. ອາເຕ້ລຸກຢືນຂຶ້ນ ແລະ ຫັນໜ້າໄປທາງປະຕູຮົ້ວ
-                    carGroup.position.z = -7.5;
-                    toyGroup.rotation.y = 0; tArm.rotation.z = -Math.PI/4; // ວາງລົດຈົກລົງ
-                    
-                    let p = t - 5;
-                    arte.group.position.y = (-0.4 * 0.6) + p * (0.4 * 0.6); // ຢືນຂຶ້ນ
-                    arte.leftLeg.rotation.x = -Math.PI / 2 * (1 - p);
-                    arte.rightLeg.rotation.x = -Math.PI / 2 * (1 - p);
-                    arte.leftArm.rotation.x = 0; arte.rightArm.rotation.x = 0;
-                    arte.group.rotation.y = Math.PI * p; // ຫັນຫຼັງກັບໄປຫາປະຕູ
-                } 
-                else if (t < 9) {
-                    // 3. ອາເຕ້ແລ່ນໄປທີ່ປະຕູຮົ້ວ (ແລ່ນຈາກ x:-10, z:10 ໄປຫາ x:-11.5, z:-3.5)
-                    carGroup.position.z = -7.5;
-                    let p = (t - 6) / 3;
-                    arte.group.position.x = -10 - p * 1.5; 
-                    arte.group.position.z = 10 - p * 13.5; 
-                    arte.group.rotation.y = Math.PI - Math.atan2(1.5, 13.5); // ຫັນໜ້າໄປຕາມທາງແລ່ນ
-                    
-                    // ອະນິເມຊັນແລ່ນ (ແກວ່ງແຂນຂາ)
-                    arte.leftLeg.rotation.x = Math.sin(time * 20) * 0.6;
-                    arte.rightLeg.rotation.x = -Math.sin(time * 20) * 0.6;
-                    arte.leftArm.rotation.x = Math.sin(time * 20) * 0.6;
-                    arte.rightArm.rotation.x = -Math.sin(time * 20) * 0.6;
-                } 
-                else if (t < 11) {
-                    // 4. ອາເຕ້ຮອດປະຕູ ເອື້ອມມືກົດເປີດປະຕູ
-                    carGroup.position.z = -7.5;
-                    arte.group.position.set(-11.5, 0, -3.5);
-                    arte.group.rotation.y = Math.PI; // ຫັນໜ້າອອກນອກ
-                    arte.leftLeg.rotation.x = 0; arte.rightLeg.rotation.x = 0;
-                    arte.leftArm.rotation.x = 0;
-                    arte.rightArm.rotation.x = -Math.PI / 2; // ເອື້ອມມືໄປກົດປະຕູ
-                    
-                    window.setGateState(true); // ປະຕູເປີດອອກ!
-                } 
-                else if (t < 16) {
-                    // 5. ປະຕູເປີດແລ້ວ ປ້າວັນຂັບລົດເຂົ້າມາໃນບ້ານ ອາເຕ້ຢືນໂບກມື
-                    let p = (t - 11) / 5;
-                    carGroup.position.z = -7.5 + p * 13.5; // ຂັບມາຮອດ z=6
-                    
-                    arte.rightArm.rotation.x = -Math.PI + Math.sin(time * 10) * 0.3; // ຍົກແຂນໂບກມື
-                    arte.rightArm.rotation.z = Math.sin(time * 10) * 0.3;
-                } 
-                else {
-                    // 6. ລົດຈອດໃນບ້ານແລ້ວ ລໍຖ້າເວລາເລີ່ມລູບໃໝ່
-                    carGroup.position.z = 6;
-                    arte.rightArm.rotation.x = 0; arte.rightArm.rotation.z = 0; // ເອົາມືລົງ
-                }
-                
-                // ລໍ້ລົດໝຸນເວລາລົດແລ່ນ
-                if (t < 5 || (t >= 11 && t < 16)) {
-                    w1.rotation.x -= 0.2; w2.rotation.x -= 0.2;
-                    w3.rotation.x -= 0.2; w4.rotation.x -= 0.2;
-                }
-            };
-            scene.add(arte.group); characters.push(arte);
-
-            // 4. ນໍ້າ (ເດັກຍິງ ຊຸດຟ້າແກ່, ຂີ່ສະເກັດ)
-            const nam = createPerson("ນໍ້າ", 0x4682b4, 0x222222, 0.7, false, "nam.jpg");
-            nam.group.position.set(-5, 0.1, 8); 
-            const skateMat = new THREE.MeshStandardMaterial({color: 0xffffff});
-            const sL = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.1, 0.25), skateMat); sL.position.set(0, -0.65, 0); nam.leftLeg.add(sL);
-            const sR = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.1, 0.25), skateMat); sR.position.set(0, -0.65, 0); nam.rightLeg.add(sR);
-            let namBaseZ = 8;
-            nam.update = (time) => {
-                nam.group.position.z = namBaseZ + Math.sin(time) * 3;
-                nam.leftLeg.rotation.x = Math.sin(time * 5) * 0.2;
-                nam.rightLeg.rotation.x = -Math.sin(time * 5) * 0.2;
-                nam.leftArm.rotation.x = Math.sin(time * 5) * 0.3;
-                nam.rightArm.rotation.x = -Math.sin(time * 5) * 0.3;
-            };
-            scene.add(nam.group); characters.push(nam);
-
-            // 5. ຕູ້ເປ້ (ກວດເດີ່ນບ້ານໄປມາ ຕາມແນວແກນ Z)
-            const pe = createPerson("ຕູ້ເປ້", 0x222222, 0x111111, 0.9, true, "pe.jpg");
-            pe.group.position.set(-16, 0, 5);
-            const broom = new THREE.Group();
-            const bStick = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.5), new THREE.MeshStandardMaterial({color: 0xcd853f}));
-            bStick.position.y = -0.5; broom.add(bStick);
-            const bHead = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.2, 0.1), new THREE.MeshStandardMaterial({color: 0x8b4513}));
-            bHead.position.y = -1.2; broom.add(bHead);
-            broom.position.set(-0.2, 0, 0.3);
-            broom.rotation.x = Math.PI / 8;
-            pe.group.add(broom);
-            
-            let peBaseZ = 5;
-            pe.update = (time) => {
-                // ຍ່າງໄປມາຕາມລວງຍາວເດີ່ນບ້ານ
-                let moveZ = Math.sin(time * 0.5) * 5; 
-                pe.group.position.z = peBaseZ + moveZ;
-                
-                // ຫັນໜ້າໄປຕາມທາງທີ່ຍ່າງ
-                if (Math.cos(time * 0.5) > 0) {
-                    pe.group.rotation.y = 0; // ຍ່າງໄປໜ້າ
-                } else {
-                    pe.group.rotation.y = Math.PI; // ຍ່າງກັບຫຼັງ
-                }
-
-                // ທ່າຍ່າງ ແລະ ກວດຂີ້ເຫຍື້ອ
-                pe.leftLeg.rotation.x = Math.sin(time * 5) * 0.4;
-                pe.rightLeg.rotation.x = -Math.sin(time * 5) * 0.4;
-                const sweep = Math.sin(time * 8) * 0.3;
-                pe.body.rotation.y = sweep;
-                broom.rotation.y = sweep;
-                broom.position.x = -0.2 + sweep * 0.5;
-                pe.leftArm.rotation.x = -Math.PI / 6 + sweep * 0.2;
-                pe.rightArm.rotation.x = -Math.PI / 4 + sweep * 0.2;
-            };
-            scene.add(pe.group); characters.push(pe);
-
-            /* STREAMING_CHUNK:Setting up window resize and animation loop... */
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
             }, false);
-
-            const toggleBtn = document.getElementById('toggleGateBtn');
-            if (toggleBtn) {
-                toggleBtn.addEventListener('click', () => {
-                    window.setGateState(!isGateOpen);
-                });
-            }
 
             function animate() {
                 requestAnimationFrame(animate);
@@ -1046,10 +668,6 @@
                     mainGate.position.x = gateBaseX + currentGateSlide;
                 }
 
-                characters.forEach(char => {
-                    if(char.update) char.update(time);
-                });
-
                 renderer.render(scene, camera);
             }
 
@@ -1058,4 +676,3 @@
     </script>
 </body>
 </html>
-```eof
