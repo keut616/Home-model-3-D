@@ -663,6 +663,53 @@
                 }
             }
 
+            // --- ຫ້ອງນໍ້າເດີ່ນບ້ານ (External Toilet) ທີ່ແຈຕອນດິນທາງຫຼັງ ---
+            const extToiletGroup = new THREE.Group();
+            scene.add(extToiletGroup);
+            
+            const extW = 1.5, extD = 1.5, extH = 2.2, extThick = 0.15;
+            
+            // ພື້ນ
+            const extBase = new THREE.Mesh(new THREE.BoxGeometry(extW, 0.2, extD), floorMaterial);
+            extBase.position.set(0, 0.1, 0); extBase.receiveShadow = true;
+            extToiletGroup.add(extBase);
+            
+            // ຫຼັງຄາ
+            const extRoof = new THREE.Mesh(new THREE.BoxGeometry(extW + 0.4, 0.2, extD + 0.4), roofMaterial);
+            extRoof.position.set(0, extH + 0.1, 0); extRoof.castShadow = true;
+            extToiletGroup.add(extRoof);
+            
+            // ຝາຫຼັງ
+            const extBack = createSolidWall(extW, extH, extThick, wallMaterial);
+            extBack.position.set(0, 0, -extD/2 + extThick/2);
+            extToiletGroup.add(extBack);
+            
+            // ຝາຊ້າຍ
+            const extLeft = createSolidWall(extThick, extH, extD, wallMaterial);
+            extLeft.position.set(-extW/2 + extThick/2, 0, 0);
+            extToiletGroup.add(extLeft);
+            
+            // ຝາຂວາ
+            const extRight = createSolidWall(extThick, extH, extD, wallMaterial);
+            extRight.position.set(extW/2 - extThick/2, 0, 0);
+            extToiletGroup.add(extRight);
+            
+            // ຝາໜ້າ (ມີປະຕູ)
+            const extFront = createWallWithHole(extW, extH, extThick, 0, 0.8, 0, 2.0, wallMaterial);
+            extFront.position.set(0, 0, extD/2 - extThick/2);
+            extToiletGroup.add(extFront);
+            
+            // ປະຕູ
+            const extDoor = createDoor(0.8, 2.0);
+            extDoor.position.set(0.4, 0, extD/2 - extThick/2 + 0.05); 
+            extDoor.rotation.y = 0; 
+            extDoor.children[0].rotation.y = -Math.PI / 2; // ໄຂອອກນອກ
+            extToiletGroup.add(extDoor);
+            
+            // ຍ້າຍສະຫຼຽງໄປແຈໃນສຸດຂອງຕອນດິນ ຕາມລູກສອນຊີ້
+            extToiletGroup.position.set(4.75, 0, 19.75);
+            extToiletGroup.rotation.y = Math.PI; // ປິ່ນໜ້າປະຕູອອກມາຫາເດີ່ນບ້ານ
+
             const toiletGroup = new THREE.Group();
             // ຍ້າຍ toiletGroup ເຂົ້າ houseGroup ເລີຍ ເພື່ອໃຫ້ມັນໝູນໄປພ້ອມກັບເຮືອນ
             houseGroup.add(toiletGroup);
