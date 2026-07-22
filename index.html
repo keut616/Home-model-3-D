@@ -701,7 +701,8 @@
             
             // ປະຕູ
             const extDoor = createDoor(0.8, 2.0);
-            extDoor.position.set(0.4, 0, extD/2 - extThick/2 + 0.05); 
+            // ແກ້ໄຂແກນ X ຈາກ 0.4 ມາເປັນ 0 ເພື່ອໃຫ້ປະຕູຢູ່ເຄິ່ງກາງພໍດີກັບຮູປ່ອງປະຕູ
+            extDoor.position.set(0, 0, extD/2 - extThick/2 + 0.02); 
             extDoor.rotation.y = 0; 
             extDoor.children[0].rotation.y = -Math.PI / 2; // ໄຂອອກນອກ
             extToiletGroup.add(extDoor);
