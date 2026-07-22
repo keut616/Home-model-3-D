@@ -72,6 +72,7 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.localClippingEnabled = true; // ເປີດໃຊ້ງານລະບົບຕັດ (Clipping) ຂອງ Three.js
             document.getElementById('canvas-container').appendChild(renderer.domElement);
 
             const controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -112,6 +113,7 @@
             const doorMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
             const woodWallMaterial = new THREE.MeshStandardMaterial({ color: 0xA0522D, roughness: 0.8 });
             const gableMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.9 }); 
+            const gypsumMaterial = new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 1.0 }); // ວັດສະດຸແຜ່ນຢິບຊໍ້າສີຂາວນວນ
 
             const houseGroup = new THREE.Group();
             scene.add(houseGroup);
@@ -223,6 +225,46 @@
                 return group;
             }
 
+            // ສ້າງຟັງຊັນໃໝ່ສຳລັບປ່ອງຢ້ຽມ 3 ປ່ອງ
+            function createThreePanelWindow(width, height) {
+                const group = new THREE.Group();
+                const frameThick = 0.04; 
+                const innerFrameThick = 0.03; 
+                const depth = wallThickness - 0.05; 
+                
+                // ກອບປ່ອງຢ້ຽມນອກ
+                const frameGeoV = new THREE.BoxGeometry(frameThick, height, depth);
+                const frameGeoH = new THREE.BoxGeometry(width, frameThick, depth);
+                const leftFrame = new THREE.Mesh(frameGeoV, frameMaterial); leftFrame.position.x = -width/2 + frameThick/2; group.add(leftFrame);
+                const rightFrame = new THREE.Mesh(frameGeoV, frameMaterial); rightFrame.position.x = width/2 - frameThick/2; group.add(rightFrame);
+                const topFrame = new THREE.Mesh(frameGeoH, frameMaterial); topFrame.position.y = height/2 - frameThick/2; group.add(topFrame);
+                const bottomFrame = new THREE.Mesh(frameGeoH, frameMaterial); bottomFrame.position.y = -height/2 + frameThick/2; group.add(bottomFrame);
+
+                // ຄຳນວນຂະໜາດບານປ່ອງຢ້ຽມ 3 ບານ (ປະມານ 50 ຊມ ຕໍ່ບານ)
+                const panelWidth = (width - frameThick*2) / 3;
+                const panelHeight = height - frameThick*2;
+                
+                function createPanel() {
+                    const panelGroup = new THREE.Group();
+                    const innerGeoV = new THREE.BoxGeometry(innerFrameThick, panelHeight, innerFrameThick);
+                    const innerGeoH = new THREE.BoxGeometry(panelWidth, innerFrameThick, innerFrameThick);
+                    const pLeft = new THREE.Mesh(innerGeoV, frameMaterial); pLeft.position.x = -panelWidth/2 + innerFrameThick/2; panelGroup.add(pLeft);
+                    const pRight = new THREE.Mesh(innerGeoV, frameMaterial); pRight.position.x = panelWidth/2 - innerFrameThick/2; panelGroup.add(pRight);
+                    const pTop = new THREE.Mesh(innerGeoH, frameMaterial); pTop.position.y = panelHeight/2 - innerFrameThick/2; panelGroup.add(pTop);
+                    const pBottom = new THREE.Mesh(innerGeoH, frameMaterial); pBottom.position.y = -panelHeight/2 + innerFrameThick/2; panelGroup.add(pBottom);
+
+                    const glassGeo = new THREE.BoxGeometry(panelWidth - innerFrameThick*2, panelHeight - innerFrameThick*2, 0.01);
+                    const glass = new THREE.Mesh(glassGeo, glassMaterial);
+                    panelGroup.add(glass);
+                    return panelGroup;
+                }
+
+                const p1 = createPanel(); p1.position.x = -panelWidth; group.add(p1); // ບານຊ້າຍ
+                const p2 = createPanel(); p2.position.x = 0; group.add(p2);           // ບານກາງ
+                const p3 = createPanel(); p3.position.x = panelWidth; group.add(p3);  // ບານຂວາ
+                return group;
+            }
+
             const pillarPositions = [
                 [4, 0, 3], [4, 0, 0], [4, 0, -3], 
                 [0, 0, 3], [0, 0, 0], [0, 0, -3], 
@@ -248,55 +290,51 @@
         const winWidth = 1.5, winHeight = 1.2, winY = 0.9;
         const doorWidth = 0.9, doorHeight = 2.1;
 
-        // ປັບຂະໜາດຝາໜ້າຫ້ອງ 1 ໃຫ້ຍາວຂຶ້ນ ຍ້ອນຝາຂ້າງຫຍັບໄປທາງຊ້າຍ 1 ແມັດ
-        const wall1_bottom = createSolidWall(4.8, wallHeight, wallThickness, wallMaterial);
-        wall1_bottom.position.set(1.4, 0, 3); houseGroup.add(wall1_bottom);
+        // ປັບຂະໜາດຝາໜ້າຫ້ອງ 1 ກັບຄືນໃຫ້ພໍດີຊ່ອງເສົາ
+        const wall1_bottom = createSolidWall(4 - pillarSize, wallHeight, wallThickness, wallMaterial);
+        wall1_bottom.position.set(2, 0, 3); houseGroup.add(wall1_bottom);
         
         // --- ຝາຂ້າງຫ້ອງ 1 (ເບື້ອງກຳແພງຮົ້ວ) ---
         const wall1_right_length = 3 - pillarSize;
-        // ປັບຄ່າ Offset ເພື່ອໃຫ້ຮູປະຕູຫຍັບໄປຕິດແຈເສົາ
-        const holeOffset1 = 0.85; 
-
-        const wall1_right = createWallWithHole(wall1_right_length, wallHeight, wallThickness, holeOffset1, doorWidth, 0, doorHeight, wallMaterial);
+        
+        // ກໍ່ເປັນຝາຕັນຕາມທີ່ໝາຍ X ສີແດງໃຫ້
+        const wall1_right = createSolidWall(wall1_right_length, wallHeight, wallThickness, wallMaterial);
         wall1_right.position.set(4, 0, 1.5);
         wall1_right.rotation.y = Math.PI / 2;
         houseGroup.add(wall1_right);
-
-        // --- ປະຕູຂ້າງຫ້ອງ 1 (ເປີດອອກຫາກຳແພງ) ---
-        const door1_side = createDoor(doorWidth, doorHeight);
-        // ຕັ້ງຕຳແໜ່ງປະຕູໃຫ້ກົງກັບຮູທີ່ເຈາະໄວ້ຕິດແຈເສົາ
-        door1_side.position.set(4, 0, 1.5 - holeOffset1); 
-        door1_side.rotation.y = Math.PI / 2;
-        // ຕັ້ງຄ່າໃຫ້ບານປະຕູເປີດອ້າອອກໄປທາງນອກ (ຫາກຳແພງ)
-        door1_side.children[0].rotation.y = Math.PI / 2; 
-        houseGroup.add(door1_side);
         
-        // ກໍ່ຝາແບ່ງຫ້ອງ 1 ແລະ 2 ພ້ອມທັງເຈາະປະຕູຫາກັນ (ປັບຂະໜາດ ແລະ ຕຳແໜ່ງຮູປະຕູໃໝ່)
-        const wall1_top = createWallWithHole(4.8, wallHeight, wallThickness, -0.25, doorWidth, 0, doorHeight, wallMaterial);
-        wall1_top.position.set(1.4, 0, 0); houseGroup.add(wall1_top);
+        // ກໍ່ຝາແບ່ງຫ້ອງ 1 ແລະ 2 ພ້ອມທັງເຈາະປະຕູຫາກັນ
+        const wall1_top = createWallWithHole(4 - pillarSize, wallHeight, wallThickness, -0.85, doorWidth, 0, doorHeight, wallMaterial);
+        wall1_top.position.set(2, 0, 0); houseGroup.add(wall1_top);
         
         const doorBetween = createDoor(doorWidth, doorHeight);
         doorBetween.position.set(1.15, 0, 0); // ຕຳແໜ່ງປະຕູ ໃກ້ເສົາກາງ (x=0)
         doorBetween.children[0].rotation.y = -Math.PI / 3; // ໄຂບານປະຕູອອກໄປທາງຫ້ອງເລກ 1 (ທິດ +z)
         houseGroup.add(doorBetween);
 
-        // ກໍ່ຝາຫ້ອງເລກ 1 ດ້ານຊ້າຍ (ເອົາປ່ອງຢ້ຽມອອກ) ແລະ ເຈາະປະຕູແທນ ໃຫ້ຄືກັບຫ້ອງເລກ 2
-        // ຫຍັບຝາຖອຍມາທາງຫ້ອງເລກ 3 ປະມານ 1 ແມັດ (x = -1)
+        // ປ່ຽນຝາຫ້ອງ 1 ດ້ານຊ້າຍ (ໜ້າລະບຽງ) ຈາກປະຕູເປັນປ່ອງຢ້ຽມ 3 ປ່ອງ
         const wall1_left_length = 3 - pillarSize;
-        const wall1_left = createWallWithHole(wall1_left_length, wallHeight, wallThickness, 0.85, doorWidth, 0, doorHeight, wallMaterial);
-        wall1_left.position.set(-1, 0, 1.5); 
+        const threeWinWidth = 1.5; // ກວ້າງລວມ 1.5 ແມັດ (3 ປ່ອງ ປ່ອງລະ ~0.5 ແມັດ)
+        const threeWinHeight = 1.2;
+        const threeWinY = 0.9;
+        
+        // ເຈາະຮູຝາສຳລັບປ່ອງຢ້ຽມ 3 ປ່ອງ
+        const wall1_left = createWallWithHole(wall1_left_length, wallHeight, wallThickness, 0, threeWinWidth, threeWinY, threeWinHeight, wallMaterial);
+        wall1_left.position.set(0, 0, 1.5); 
         wall1_left.rotation.y = Math.PI / 2; 
         houseGroup.add(wall1_left);
         
-        const door1 = createDoor(doorWidth, doorHeight);
-        door1.position.set(-1, 0, 0.65); // ຕຳແໜ່ງປະຕູ ໃຫ້ພໍດີກັບຮູໃໝ່
-        door1.rotation.y = -Math.PI / 2; // ປິ່ນຕາມຝາ ແລະ ເປີດເຂົ້າໃນຫ້ອງ
-        houseGroup.add(door1);
+        // ເອົາປ່ອງຢ້ຽມ 3 ປ່ອງມາໃສ່ແທນປະຕູ
+        const window3Panels = createThreePanelWindow(threeWinWidth, threeWinHeight);
+        window3Panels.position.set(0, threeWinY + threeWinHeight/2, 1.5); 
+        window3Panels.rotation.y = Math.PI / 2;
+        houseGroup.add(window3Panels);
 
-        const wall2_top = createWallWithHole(4 - pillarSize, wallHeight, wallThickness, 0, winWidth, winY, winHeight, wallMaterial);
+        // --- ປ່ຽນປ່ອງຢ້ຽມຫ້ອງເລກ 2 ເປັນແບບ 3 ປ່ອງ ---
+        const wall2_top = createWallWithHole(4 - pillarSize, wallHeight, wallThickness, 0, threeWinWidth, threeWinY, threeWinHeight, wallMaterial);
         wall2_top.position.set(2, 0, -3); houseGroup.add(wall2_top);
-            const win2 = createSlidingWindow(winWidth, winHeight);
-            win2.position.set(2, winY + winHeight/2, -3); houseGroup.add(win2);
+            const win2 = createThreePanelWindow(threeWinWidth, threeWinHeight);
+            win2.position.set(2, threeWinY + threeWinHeight/2, -3); houseGroup.add(win2);
             const wall2_right = createSolidWall(wallThickness, wallHeight, 3 - pillarSize, wallMaterial);
             wall2_right.position.set(4, 0, -1.5); houseGroup.add(wall2_right);
 
@@ -308,32 +346,66 @@
             houseGroup.add(wall2_left);
             
             const door2 = createDoor(doorWidth, doorHeight);
-            door2.position.set(0, 0, -0.65); // ຕຳແໜ່ງກາງປະຕູ ໃຫ້ພໍດີກັບຮູ
-            door2.rotation.y = -Math.PI / 2; // ປິ່ນກົງກັນຂ້າມ ເພື່ອຍ້າຍບານພັບໄປອີກເບື້ອງ
-            door2.children[0].rotation.y = Math.PI / 4; // ປັບທິດທາງບານພັບໃຫ້ເປີດເຂົ້າໃນຫ້ອງ
+            door2.position.set(0, 0, -1.55); 
+            door2.rotation.y = Math.PI / 2;
+            door2.children[0].rotation.y = Math.PI / 2; // ເປີດເຂົ້າຫາຫ້ອງ 3 (ທິດທາງອ້າອອກໄປທາງກຳແພງ)
             houseGroup.add(door2);
+            
+            // ສ້າງຝາຂັ້ນຫ້ອງເລກ 2 (ໂຄງໂລ+ແຜ່ນຢິບຊໍ້າ) ຫ່າງຈາກເສົາກາງ 1 ແມັດ
+            const partitionZ = -1.0; 
+            const gypsumThickness = 0.08;
+            
+            // ເຈາະຮູປະຕູໃສ່ຝາຢິບຊໍ້າ ໃຫ້ກົງກັບປະຕູຫ້ອງ 1 (holeX = -0.85)
+            const partitionWall = createWallWithHole(4 - pillarSize, wallHeight, gypsumThickness, -0.85, doorWidth, 0, doorHeight, gypsumMaterial);
+            partitionWall.position.set(2, 0, partitionZ);
+            houseGroup.add(partitionWall);
 
-            const sideSlideDoorWidth = 1.8; 
+            // ເພີ່ມປະຕູໃສ່ຊ່ອງທີ່ເຈາະໃໝ່
+            const doorPartition = createDoor(doorWidth, doorHeight);
+            // ຕັ້ງຕຳແໜ່ງໃຫ້ກົງກັບຊ່ອງທີ່ເຈາະ (x = 1.15 ຄືກັບປະຕູຫ້ອງ 1) 
+            // ຍັບແກນ Z ໄປທີ່ partitionZ 
+            doorPartition.position.set(1.15, 0, partitionZ);
+            // ຕັ້ງຄ່າໃຫ້ເປີດເຂົ້າໄປໃນຫ້ອງເລກ 2 (ທິດ -Z)
+            doorPartition.children[0].rotation.y = Math.PI / 2; 
+            houseGroup.add(doorPartition);
 
-            // ກໍ່ຕັນຝາໜ້າຫ້ອງ 3 (z=3) (ປ່ຽນຈາກປະຕູແກ້ວເປັນຝາຕັນ)
-            // ປັບຂະໜາດຝາໜ້າຫ້ອງ 3 ໃຫ້ສັ້ນລົງ ຍ້ອນຝາຫ້ອງ 1 ຫຍັບເຂົ້າມາ (ຍາວເຫຼືອ 2.8 ແມັດ)
-            const wall3_top = createSolidWall(2.8, shortWallHeight, wallThickness, wallMaterial);
-            wall3_top.position.set(-2.4, 0, 3); houseGroup.add(wall3_top);
+            // --- ຫ້ອງ 3 ---
+            // ປັບຄວາມສູງຂອງຝາຫຼັງຫ້ອງ 3 ໃຫ້ພຽງກັບຫົວເສົາສັ້ນ (shortWallHeight) 2.4 ແມັດ ເພື່ອບໍ່ໃຫ້ຊອດຫຼັງຄາ
+            // ຫຍັບປ່ອງຫວ່າງໄປທາງຫ້ອງເລກ 2 ປະມານ 1 ແມັດ (ປ່ຽນຄ່າຈາກ -0.4 ເປັນ 0.6)
+            const wall3_back = createWallWithHole(4 - pillarSize, shortWallHeight, wallThickness, 0.6, doorWidth, 0, doorHeight, wallMaterial);
+            wall3_back.position.set(-2, 0, -3); houseGroup.add(wall3_back);
+            
+            // ເພີ່ມບານປະຕູດ້ານຫຼັງຫ້ອງ 3 ແລະ ຕັ້ງຄ່າໃຫ້ເປີດອອກໄປທາງກຳແພງ
+            const door3_back = createDoor(doorWidth, doorHeight);
+            // ຕັ້ງຢູ່ x=-1.4 (ກາງປ່ອງ) ແລະ ຍັບ Z ໄປທີ່ -3.1 ເພື່ອໃຫ້ບານພັບຕິດໜ້າຝານອກ
+            door3_back.position.set(-1.4, 0, -3.1); 
+            door3_back.rotation.y = Math.PI; 
+            door3_back.children[0].rotation.y = -Math.PI / 8; // ເປີດອ້າອອກໄປທາງກຳແພງຂ້າງຫ້ອງເລກ 3
+            houseGroup.add(door3_back);
 
-            // ປ່ຽນຝາຂ້າງຫ້ອງ 3 (x=-4) ໃຫ້ເປັນປ່ອງຢ້ຽມ
+            // --- ປ່ຽນປ່ອງຢ້ຽມຫ້ອງເລກ 3 (ຝາຂ້າງ) ເປັນແບບ 3 ປ່ອງ ---
             const wall3_left_full_length = 3 - pillarSize; 
-            const wall3_left_mod = createWallWithHole(wall3_left_full_length, shortWallHeight, wallThickness, 0, winWidth, winY, winHeight, wallMaterial);
-            wall3_left_mod.position.set(-4, 0, 1.5); 
+            const wall3_left_mod = createWallWithHole(wall3_left_full_length, shortWallHeight, wallThickness, 0, threeWinWidth, threeWinY, threeWinHeight, wallMaterial);
+            wall3_left_mod.position.set(-4, 0, -1.5); 
             wall3_left_mod.rotation.y = Math.PI / 2; houseGroup.add(wall3_left_mod);
 
-            const win3_side = createSlidingWindow(winWidth, winHeight);
-            win3_side.position.set(-4, winY + winHeight/2, 1.5); 
+            const win3_side = createThreePanelWindow(threeWinWidth, threeWinHeight);
+            win3_side.position.set(-4, threeWinY + threeWinHeight/2, -1.5); 
             win3_side.rotation.y = Math.PI / 2; houseGroup.add(win3_side);
 
-            // ປັບຂະໜາດຝາຫຼັງຫ້ອງ 3 ໃຫ້ສັ້ນລົງ ຍ້ອນຝາຫ້ອງ 1 ຫຍັບເຂົ້າມາ (ຍາວເຫຼືອ 2.8 ແມັດ)
-            const wall3_bottom = createSolidWall(2.8, shortWallHeight, wallThickness, wallMaterial);
-            wall3_bottom.position.set(-2.4, 0, 0); houseGroup.add(wall3_bottom);
-
+            // ເອົາປະຕູຂ້າງຫ້ອງ 3 ອອກ (ລົບໂຄ້ດເກົ່າຖິ້ມ)
+            // ຝາໜ້າຫ້ອງ 3 (z = 0) ປັບຄວາມສູງລົງມາເປັນ shortWallHeight ໃຫ້ພຽງກັນ
+            const wall3_front = createWallWithHole(4 - pillarSize, shortWallHeight, wallThickness, 0.4, doorWidth, 0, doorHeight, wallMaterial);
+            wall3_front.position.set(-2, 0, 0); houseGroup.add(wall3_front);
+            
+            const door3_front = createDoor(doorWidth, doorHeight);
+            // ຍ້າຍແກນ Z ອອກມາ 0.1 ເພື່ອໃຫ້ບານພັບຕິດໜ້າຝານອກເບື້ອງລະບຽງ
+            door3_front.position.set(-1.6, 0, 0.1); 
+            // ແກ້ໄຂມຸມບານພັບ: ໃຊ້ຄ່າລົບ (-) ເພື່ອໃຫ້ບານປະຕູໄຂອອກມາທາງລະບຽງຢ່າງຖືກຕ້ອງ
+            door3_front.rotation.y = 0; 
+            door3_front.children[0].rotation.y = -Math.PI / 2; // ເປີດອ້າອອກ 90 ອົງສາ
+            houseGroup.add(door3_front);
+            
             const roofGroup = new THREE.Group();
             scene.add(roofGroup);
             
@@ -408,10 +480,10 @@
                 mesh.rotation.x = -Math.PI / 2; mesh.position.set(x, 0.21, z); return mesh;
             }
 
-            // ອັບເດດຕຳແໜ່ງປ້າຍໝາຍເລກຫ້ອງໃຫ້ຢູ່ເຄິ່ງກາງພໍດີ ຫຼັງຈາກປ່ຽນຂະໜາດຫ້ອງ
-            annotationGroup.add(createRoomLabel('1', 1.5, 1.5));
+            // ອັບເດດຕຳແໜ່ງປ້າຍໝາຍເລກຫ້ອງໃຫ້ຢູ່ເຄິ່ງກາງພໍດີ
+            annotationGroup.add(createRoomLabel('1', 2, 1.5));
             annotationGroup.add(createRoomLabel('2', 2, -1.5));
-            annotationGroup.add(createRoomLabel('3', -2.5, 1.5));
+            annotationGroup.add(createRoomLabel('3', -2, -1.5)); // ຍ້າຍປ້າຍໝາຍເລກ 3 ມາໄວ້ຫ້ອງຫຼັງ
 
             function createDimensionLine(p1, p2, text, textOffsetX, textOffsetZ, rotation) {
                 const group = new THREE.Group();
@@ -592,51 +664,96 @@
             }
 
             const toiletGroup = new THREE.Group();
-            scene.add(toiletGroup);
+            // ຍ້າຍ toiletGroup ເຂົ້າ houseGroup ເລີຍ ເພື່ອໃຫ້ມັນໝູນໄປພ້ອມກັບເຮືອນ
+            houseGroup.add(toiletGroup);
 
-            const tW = 2; 
-            const tD = 2; 
-            const tH = 2.4; 
+            // ຂະໜາດຫ້ອງນໍ້າ (ຮັກສາຂະໜາດເດີມທີ່ລູກຄ້າພໍໃຈ)
+            const tW = 1.5; 
+            const tD = 2.5; 
+            const tH = 2.15; 
             const tThick = 0.15; 
-            const doorW = 0.8; // ປັບເປັນປະຕູດຽວກວ້າງ 0.8 ແມັດ
+            const tDoorW = 0.8; 
 
-            const tBase = new THREE.Mesh(new THREE.BoxGeometry(tW + 0.2, 0.2, tD + 0.2), floorMaterial);
+            // ພື້ນຫ້ອງນໍ້າ
+            const tBase = new THREE.Mesh(new THREE.BoxGeometry(tW, 0.2, tD), floorMaterial);
             tBase.position.set(0, 0.1, 0);
             tBase.receiveShadow = true;
             toiletGroup.add(tBase);
 
-            const tBackWall = createSolidWall(tW, tH, tThick, wallMaterial);
-            tBackWall.position.set(0, 0, -tD/2 + tThick/2);
-            toiletGroup.add(tBackWall);
-
-            const tLeftWall = createSolidWall(tThick, tH, tD, wallMaterial);
+            // ຝາຊ້າຍ (ເບື້ອງທີ່ຫັນໜ້າໄປຫາປ່ອງຢ້ຽມຫ້ອງ 2) - ເຈາະປະຕູທາງອອກ
+            const tLeftWall = createWallWithHole(tD, tH, tThick, 0, tDoorW, 0, 2.0, wallMaterial);
             tLeftWall.position.set(-tW/2 + tThick/2, 0, 0);
+            tLeftWall.rotation.y = Math.PI / 2;
             toiletGroup.add(tLeftWall);
 
+            // ຝາຂວາ (ເບື້ອງທີ່ຊື່ກັບແຈເສົາດ້ານນອກ) - ເປັນຝາຕັນ
             const tRightWall = createSolidWall(tThick, tH, tD, wallMaterial);
             tRightWall.position.set(tW/2 - tThick/2, 0, 0);
             toiletGroup.add(tRightWall);
 
-            const tFrontWall = createWallWithHole(tW, tH, tThick, 0, doorW, 0, 2.0, wallMaterial);
-            tFrontWall.position.set(0, 0, tD/2 - tThick/2);
-            toiletGroup.add(tFrontWall);
-
-            const tDoor = createDoor(doorW, 2.0);
-            tDoor.position.set(0, 0, tD/2 - tThick/2); 
+            // ປະຕູຫ້ອງນໍ້າ ໃສ່ຝາຊ້າຍ ໃຫ້ໄຂອອກນອກ
+            const tDoor = createDoor(tDoorW, 2.0);
+            tDoor.position.set(-tW/2 + tThick/2 + 0.05, 0, 0); 
+            tDoor.rotation.y = Math.PI / 2; 
+            tDoor.children[0].rotation.y = -Math.PI / 2; 
             toiletGroup.add(tDoor);
 
-            const tRoof = new THREE.Mesh(new THREE.BoxGeometry(tW + 0.6, 0.2, tD + 0.6), roofMaterial);
-            tRoof.position.set(0, tH + 0.1, 0);
-            tRoof.rotation.x = -0.12; 
-            tRoof.rotation.z = 0;  
-            tRoof.castShadow = true;
-            tRoof.name = "myToiletRoof"; 
-            toiletGroup.add(tRoof);
+            // ຕັ້ງຕຳແໜ່ງຫ້ອງນໍ້າໃໝ່ ໃຫ້ເລີ່ມຈາກແຈເສົາຫ້ອງເລກ 2 (ແຈຂວາ x=4)
+            // ຍັບມາທາງຊ້າຍ (ຫາປ່ອງຢ້ຽມຫ້ອງ 2) = 4 - 1.5/2 = 3.25
+            // ຝາຫຼັງບ້ານຢູ່ແກນ Z=-3. ຍັບໄປຫາກຳແພງ (2.5/2) = -4.25
+            toiletGroup.position.set(3.25, 0, -4.25);
+            toiletGroup.rotation.y = 0;
 
-            toiletGroup.position.set(3.5, 0, 18.5);
-            toiletGroup.rotation.y = Math.PI; 
-            
-            // ໂຄ້ດສ່ວນຂອງລົດ ແລະ ຕົວລະຄອນ (ຄົນ) ຖືກລຶບອອກຕາມຄຳຂໍແລ້ວ
+            // --- ເຮືອນຄົວ (Kitchen) ຕໍ່ຈາກຫ້ອງນໍ້າ ---
+            const kitchenGroup = new THREE.Group();
+            houseGroup.add(kitchenGroup);
+
+            // ຄວາມຍາວເລີ່ມຈາກປະຕູຫ້ອງນໍ້າ (x=2.5) ຫາ ແຈຫ້ອງເລກ 3 (x=-4.0)
+            const kW = 6.5; 
+            const kD = 2.5; // ຄວາມເລິກຈາກຝາເຮືອນຫາກຳແພງ
+            const kH = 2.15; 
+
+            // ພື້ນເຮືອນຄົວ
+            const kBase = new THREE.Mesh(new THREE.BoxGeometry(kW, 0.2, kD), floorMaterial);
+            kBase.position.set(2.5 - kW/2, 0.1, -3 - kD/2); // ຕັ້ງໃຫ້ຕໍ່ຈາກປະຕູຫ້ອງນໍ້າພໍດີ
+            kBase.receiveShadow = true;
+            kitchenGroup.add(kBase);
+
+            // ຝາປິດດ້ານຂ້າງເຮືອນຄົວ (ຕິດແຈຫ້ອງ 3)
+            const kSideWall = createSolidWall(wallThickness, kH, kD, wallMaterial);
+            kSideWall.position.set(-4, 0, -4.25);
+            kitchenGroup.add(kSideWall);
+
+            // ເຄົາເຕີຄົວ (Kitchen Counter)
+            const counterW = 3.0;
+            const counterH = 0.85;
+            const counterD = 0.6;
+            const counterMat = new THREE.MeshStandardMaterial({ color: 0x607d8b, roughness: 0.4 });
+            const counter = new THREE.Mesh(new THREE.BoxGeometry(counterW, counterH, counterD), counterMat);
+            counter.position.set(-2.0, counterH/2, -5.2); // ຕັ້ງຕິດກຳແພງຫຼັງບ້ານ
+            counter.castShadow = true; counter.receiveShadow = true;
+            kitchenGroup.add(counter);
+
+            // ຫຼັງຄາເຊື່ອມຕໍ່ (ປົກຄຸມທັງຫ້ອງນໍ້າ + ເຮືອນຄົວ)
+            const backRoofW = 8.8; // ກວມເອົາຄວາມຍາວຫຼັງບ້ານທັງໝົດ 8m + ຍື່ນອອກຂ້າງລະ 0.4m
+            const backRoofD = 2.9; // ຍື່ນອອກໜ້າຫຼັງ
+            const sharedBackRoof = new THREE.Mesh(new THREE.BoxGeometry(backRoofW, 0.2, backRoofD), roofMaterial);
+            // ປັບລະດັບ Y ເປັນ 2.2 ເພື່ອໃຫ້ຂອບຫຼັງຄາເບື້ອງບ້ານ (Z=-3) ສູງ 2.4m ພໍດີກັບຫົວເສົາຫ້ອງ 3
+            sharedBackRoof.position.set(0, 2.2, -4.25);
+            sharedBackRoof.rotation.x = -0.08; // ລາດອຽງໄປທາງກຳແພງຫຼັງ
+            sharedBackRoof.castShadow = true;
+            sharedBackRoof.name = "sharedBackRoof";
+            houseGroup.add(sharedBackRoof);
+
+            // ໝູນຕົວເຮືອນທັງໝົດ 90 ອົງສາໄປທາງຂວາ (ຕາມເຂັມໂມງ) ເມື່ອທຽບກັບມູມມອງຈາກປະຕູຮົ້ວ
+            houseGroup.rotation.y = -Math.PI / 2;
+            roofGroup.rotation.y = -Math.PI / 2;
+            annotationGroup.rotation.y = -Math.PI / 2;
+
+            // ຫຍັບເຮືອນທັງໝົດຖອຍຫຼັງ (ແກນ +Z) ໄປ 50 ຊມ (0.5 ແມັດ) ໃຫ້ຫ່າງຈາກກຳແພງໜ້າ
+            houseGroup.position.z = 0.5;
+            roofGroup.position.z = 0.5;
+            annotationGroup.position.z = 0.5;
 
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
@@ -654,9 +771,10 @@
                 
                 roofGroup.visible = (angle >= 0.8);
                 
-                const targetToiletRoof = scene.getObjectByName("myToiletRoof");
-                if (targetToiletRoof) {
-                    targetToiletRoof.visible = (angle >= 0.8);
+                // ເຊື່ອງ/ສະແດງ ຫຼັງຄາເຮືອນຄົວແລະຫ້ອງນໍ້າ ເວລາເບິ່ງຈາກມຸມສູງ
+                const targetBackRoof = scene.getObjectByName("sharedBackRoof");
+                if (targetBackRoof) {
+                    targetBackRoof.visible = (angle >= 0.8);
                 }
 
                 if (typeof annotationGroup !== 'undefined') {
